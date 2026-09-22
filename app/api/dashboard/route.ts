@@ -87,10 +87,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const userEmail = body.userEmail || 'Unknown User';
     const userName = body.userName || 'Engineer';
-    
-    // Extract IP Address from headers
-    const forwarded = req.headers.get("x-forwarded-for");
-    const ipAddress = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "127.0.0.1");
+    const ipAddress = body.ipAddress || '112.135.64.117'; // Falls back to your specified IP if needed
 
     let logs: any = (await kv.get("data:logs")) || [];
     if (typeof logs === 'string') logs = JSON.parse(logs);
