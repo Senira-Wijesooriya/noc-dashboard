@@ -7,24 +7,18 @@ import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw } from
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>({ targets: { "R81.20": "170", "R82": "127" }, customers: [], lastUpdated: 0 });
+  const [data, setData] = useState<any>({ targets: {}, customers: [], lastUpdated: 0 });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Bulletproof fetch function
+  // Function to fetch latest data from KV database
   const loadData = async () => {
     try {
       const res = await fetch("/api/dashboard");
       const json = await res.json();
-      
-      // Safety Check: Only update state if the API actually returned our expected data format
-      if (json && json.targets && json.customers) {
-        setData(json);
-      } else {
-        console.error("API returned an error instead of data:", json);
-      }
+      setData(json);
     } catch (e) {
-      console.error("Failed to fetch data. Database might not be linked.", e);
+      console.error("Failed to fetch data", e);
     }
   };
 
@@ -34,6 +28,7 @@ export default function SOCDashboard() {
       setLoading(false);
       if (u) {
         loadData();
+        // AUTO-REFRESH: Poll the database every 5 minutes (300000ms)
         const interval = setInterval(loadData, 300000);
         return () => clearInterval(interval);
       }
@@ -45,10 +40,12 @@ export default function SOCDashboard() {
     try { 
       await signInWithPopup(auth, googleProvider); 
     } catch (e: any) { 
+      console.error("Firebase Auth Error:", e);
       alert(`Firebase Error: ${e.message}`); 
     }
   };
 
+  // Function to force an immediate scrape from Check Point servers
   const handleForceSync = async () => {
     setIsUpdating(true);
     try {
@@ -60,7 +57,7 @@ export default function SOCDashboard() {
       if (res.ok) {
         await loadData();
       } else {
-        alert("Scraping failed. Database may not be connected.");
+        alert("Scraping failed. Check server logs.");
       }
     } catch (e) {
       console.error(e);
@@ -69,7 +66,7 @@ export default function SOCDashboard() {
   };
 
   const getStatusColor = (version: string, currentTake: string) => {
-    const targetTakeStr = data?.targets?.[version];
+    const targetTakeStr = data.targets[version];
     if (!targetTakeStr || !currentTake) return "border-gray-600 text-gray-400";
     
     const current = parseInt(currentTake.replace(/\D/g, '')) || 0;
@@ -105,8 +102,8 @@ export default function SOCDashboard() {
       <div className="bg-red-950/80 border-b border-red-500/50 text-red-400 py-1.5 overflow-hidden whitespace-nowrap relative flex items-center">
         <div className="animate-[marquee_20s_linear_infinite] inline-block font-bold tracking-widest text-sm w-full">
           🚨 LIVE THREAT INTELLIGENCE: TARGET JUMBO HOTFIX DEPLOYMENT REQUIRED 
-          <span className="text-white mx-4">|</span> R81.20: TARGET TAKE {data?.targets?.["R81.20"] || '170'} 
-          <span className="text-white mx-4">|</span> R82: TARGET TAKE {data?.targets?.["R82"] || '127'} 
+          <span className="text-white mx-4">|</span> R81.20: TARGET TAKE {data.targets["R81.20"] || '170'} 
+          <span className="text-white mx-4">|</span> R82: TARGET TAKE {data.targets["R82"] || '127'} 
           <span className="text-white mx-4">|</span> SECURE ALL PERIMETERS 🚨
         </div>
       </div>
@@ -132,7 +129,7 @@ export default function SOCDashboard() {
               {isUpdating ? 'Pinging CP Servers...' : 'Force CP Sync'}
             </button>
             <span className="text-[10px] text-slate-500 mt-1 mr-1">
-              Last Scrape: {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'Unknown'}
+              Last Scrape: {data.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'Unknown'}
             </span>
           </div>
 
@@ -157,7 +154,7 @@ export default function SOCDashboard() {
         </div>
 
         <div className="space-y-4">
-          {data?.customers?.map((customer: any) => (
+          {data.customers?.map((customer: any) => (
             <div key={customer.id} className="bg-slate-900 border border-slate-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
               
               <button 
@@ -168,7 +165,7 @@ export default function SOCDashboard() {
                   <Server className="text-cyan-600 w-6 h-6" />
                   <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name}</span>
                   <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded-sm border border-slate-700">
-                    {customer?.clusters?.length || 0} Clusters
+                    {customer.clusters?.length || 0} Clusters
                   </span>
                 </div>
                 <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${expanded === customer.id ? 'rotate-180' : ''}`} />
@@ -177,7 +174,7 @@ export default function SOCDashboard() {
               <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-slate-800' : 'grid-rows-[0fr] opacity-0'}`}>
                 <div className="overflow-hidden">
                   <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-slate-900/40 shadow-inner">
-                    {customer?.clusters?.map((cluster: any) => {
+                    {customer.clusters?.map((cluster: any) => {
                       const statusStyles = getStatusColor(cluster.version, cluster.hotfix);
                       
                       return (
