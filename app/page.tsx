@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw, Plus, X } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -11,7 +11,7 @@ export default function SOCDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Modal State
+  // Modal State for GWs
   const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
 
   const loadData = async () => {
@@ -61,8 +61,6 @@ export default function SOCDashboard() {
     setIsUpdating(false);
   };
 
-  // --- NEW WRITE FUNCTIONS --- //
-  
   const saveCustomersToDB = async (updatedCustomers: any) => {
     setData({ ...data, customers: updatedCustomers });
     await fetch("/api/dashboard", {
@@ -73,7 +71,7 @@ export default function SOCDashboard() {
   };
 
   const handleAddClient = () => {
-    const name = prompt("Enter new Client Perimeter Name (e.g. NTB, Seylan):");
+    const name = prompt("Enter new Client Perimeter Name (e.g. Seylan, Commercial Bank):");
     if (!name) return;
     
     const newCustomer = {
@@ -95,6 +93,7 @@ export default function SOCDashboard() {
       version: formData.get("version"),
       hotfix: formData.get("hotfix"),
       status: formData.get("status"),
+      note: formData.get("note"), // Special Note
     };
 
     const updatedCustomers = data.customers.map((c: any) => {
@@ -114,7 +113,7 @@ export default function SOCDashboard() {
 
   const handleDeleteCluster = () => {
     if (!editModal || !editModal.cluster.id) return;
-    if (!confirm(`Are you sure you want to delete ${editModal.cluster.name}?`)) return;
+    if (!confirm(`Are you sure you want to delete gateway ${editModal.cluster.name}?`)) return;
 
     const updatedCustomers = data.customers.map((c: any) => {
       if (c.id === editModal.customerId) {
@@ -127,32 +126,30 @@ export default function SOCDashboard() {
     setEditModal(null);
   };
 
-  // --------------------------- //
-
   const getStatusColor = (version: string, currentTake: any) => {
     const targetTakeStr = String(data?.targets?.[version] || '');
     const currentTakeStr = String(currentTake || '');
-    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') return "border-gray-600 text-gray-400"; 
+    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') return "border-zinc-700 text-zinc-400"; 
     
     const current = parseInt(currentTakeStr.replace(/\D/g, '')) || 0;
     const target = parseInt(targetTakeStr.replace(/\D/g, '')) || 0;
 
     if (current >= target) return "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] text-emerald-400";
     if (current >= target - 20) return "border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)] text-amber-400";
-    return "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] text-red-500";
+    return "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)] text-orange-400";
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-cyan-500 font-mono tracking-widest">INITIALIZING SECURE CONNECTION...</div>;
+  if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-orange-500 font-mono tracking-widest">INITIALIZING MITESP SECURE SHIPYARD...</div>;
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-mono relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-        <div className="z-10 bg-slate-900 border border-cyan-500/30 p-12 shadow-[0_0_50px_rgba(6,182,212,0.15)] text-center max-w-md w-full">
-          <ShieldAlert className="w-20 h-20 mx-auto text-red-500 mb-6 animate-pulse" />
-          <h1 className="text-3xl font-black tracking-widest text-white mb-2 uppercase">NOC Command</h1>
-          <p className="text-cyan-400 text-sm mb-8 tracking-widest">RESTRICTED ACCESS AREA</p>
-          <button onClick={login} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white font-mono relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a2e_1px,transparent_1px),linear-gradient(to_bottom,#27272a2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="z-10 bg-zinc-900 border border-orange-500/40 p-12 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
+          <ShieldAlert className="w-20 h-20 mx-auto text-orange-500 mb-6 animate-pulse" />
+          <h1 className="text-3xl font-black tracking-widest text-white mb-1 uppercase">MITesp Shipyard</h1>
+          <p className="text-orange-400 text-xs mb-8 tracking-widest uppercase">Check Point Fleet Command</p>
+          <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
             Authenticate via Identity Provider
           </button>
         </div>
@@ -161,53 +158,53 @@ export default function SOCDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-300 font-mono flex flex-col selection:bg-cyan-900">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono flex flex-col selection:bg-orange-950">
       
       {/* LIVE INTELLIGENCE TICKER */}
-      <div className="bg-red-950/80 border-b border-red-500/50 text-red-400 py-1.5 overflow-hidden whitespace-nowrap relative flex items-center">
+      <div className="bg-orange-950/90 border-b border-orange-500/60 text-orange-300 py-1.5 overflow-hidden whitespace-nowrap relative flex items-center">
         <div className="animate-[marquee_20s_linear_infinite] inline-block font-bold tracking-widest text-sm w-full">
-          🚨 LIVE THREAT INTELLIGENCE: TARGET JUMBO HOTFIX DEPLOYMENT REQUIRED 
+          🔥 MITESP SHIPYARD INTEL: TARGET JUMBO HOTFIX DEPLOYMENT REQUIRED 
           <span className="text-white mx-4">|</span> R81.20: TARGET TAKE {data?.targets?.["R81.20"] || '170'} 
           <span className="text-white mx-4">|</span> R82: TARGET TAKE {data?.targets?.["R82"] || '127'} 
-          <span className="text-white mx-4">|</span> SECURE ALL PERIMETERS 🚨
+          <span className="text-white mx-4">|</span> ALL GWs SECURED 🔥
         </div>
       </div>
 
       {/* NAVBAR */}
-      <nav className="border-b border-slate-800 bg-slate-900/50 px-6 py-4 flex justify-between items-center backdrop-blur-md sticky top-0 z-20">
+      <nav className="border-b border-zinc-800 bg-zinc-900/80 px-6 py-4 flex justify-between items-center backdrop-blur-md sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <ShieldCheck className="text-cyan-500 w-8 h-8" />
+          <ShieldCheck className="text-orange-500 w-8 h-8" />
           <div>
-            <h1 className="text-xl font-black text-white tracking-widest leading-none">SECURITY MATRIX</h1>
-            <span className="text-xs text-cyan-500 tracking-[0.2em]">CHECK POINT FLEET COMMAND</span>
+            <h1 className="text-xl font-black text-white tracking-widest leading-none">MITesp</h1>
+            <span className="text-xs text-orange-400 tracking-[0.2em] font-bold">CHECK POINT SHIPYARD</span>
           </div>
         </div>
         
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end">
-            <button onClick={handleForceSync} disabled={isUpdating} className="flex items-center gap-2 text-xs bg-cyan-900/40 hover:bg-cyan-900 text-cyan-400 px-4 py-1.5 border border-cyan-500/30 uppercase tracking-widest transition-colors disabled:opacity-50">
+            <button onClick={handleForceSync} disabled={isUpdating} className="flex items-center gap-2 text-xs bg-orange-950 hover:bg-orange-900 text-orange-400 px-4 py-1.5 border border-orange-500/40 uppercase tracking-widest transition-colors disabled:opacity-50">
               <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
-              {isUpdating ? 'Pinging CP Servers...' : 'Force CP Sync'}
+              {isUpdating ? 'Syncing...' : 'Force CP Sync'}
             </button>
-            <span className="text-[10px] text-slate-500 mt-1 mr-1">
+            <span className="text-[10px] text-zinc-400 mt-1 mr-1">
               Last Scrape: {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'Unknown'}
             </span>
           </div>
 
-          <div className="text-right hidden md:block pl-6 border-l border-slate-800">
-            <div className="text-sm font-bold text-white uppercase">{user?.displayName || 'Engineer'}</div>
-            <div className="text-xs text-slate-500">Security Operations</div>
+          <div className="text-right hidden md:block pl-6 border-l border-zinc-800">
+            <div className="text-sm font-bold text-white uppercase">{user?.displayName || 'Senira Wijesooriya'}</div>
+            <div className="text-xs text-orange-400 font-bold tracking-wider">Cyber Security Engineer</div>
           </div>
-          <button onClick={() => signOut(auth)} className="text-slate-400 hover:text-red-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
+          <button onClick={() => signOut(auth)} className="text-zinc-400 hover:text-orange-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
         </div>
       </nav>
 
       {/* DASHBOARD CONTENT */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
         
-        <div className="flex justify-between items-end mb-8 border-b border-slate-800 pb-4 mt-4">
+        <div className="flex justify-between items-end mb-8 border-b border-zinc-800 pb-4 mt-4">
           <h2 className="text-2xl text-white font-bold uppercase tracking-wider">Client Perimeters</h2>
-          <button onClick={handleAddClient} className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors shadow-[0_0_10px_rgba(6,182,212,0.1)] hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+          <button onClick={handleAddClient} className="bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/40 px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors shadow-[0_0_10px_rgba(249,115,22,0.15)] hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]">
             + Add Client Perimeter
           </button>
         </div>
@@ -215,71 +212,84 @@ export default function SOCDashboard() {
         <div className="space-y-4">
           {Array.isArray(data?.customers) && data.customers.length > 0 ? (
             data.customers.map((customer: any) => (
-              <div key={customer.id || Math.random()} className="bg-slate-900 border border-slate-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
+              <div key={customer.id || Math.random()} className="bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
                 
-                <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/80 transition-colors group">
+                <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-zinc-800/80 transition-colors group">
                   <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => setExpanded(expanded === customer.id ? null : customer.id)}>
-                    <Server className="text-cyan-600 w-6 h-6" />
+                    <Server className="text-orange-500 w-6 h-6" />
                     <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
-                    <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded-sm border border-slate-700">
-                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Clusters
+                    <span className="bg-zinc-800 text-orange-300 text-xs px-2 py-1 rounded-sm border border-zinc-700">
+                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} GWs
                     </span>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <button 
-                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', status: '' } })}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-slate-800 hover:bg-cyan-900 text-cyan-400 px-3 py-1 border border-cyan-500/30 flex items-center gap-1"
+                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: 'GW-', version: 'R81.20', hotfix: 'Take ', status: '', note: '' } })}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-zinc-800 hover:bg-orange-950 text-orange-400 px-3 py-1 border border-orange-500/40 flex items-center gap-1 font-bold"
                     >
-                      <Plus className="w-3 h-3" /> Add Cluster
+                      <Plus className="w-3 h-3" /> Add GW
                     </button>
-                    <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
+                    <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
                   </div>
                 </div>
 
-                <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-slate-800' : 'grid-rows-[0fr] opacity-0'}`}>
+                <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-zinc-800' : 'grid-rows-[0fr] opacity-0'}`}>
                   <div className="overflow-hidden">
-                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-slate-900/40 shadow-inner">
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-zinc-950/60 shadow-inner">
                       {Array.isArray(customer?.clusters) && customer.clusters.length > 0 ? (
                         customer.clusters.map((cluster: any) => {
                           const statusStyles = getStatusColor(cluster.version, cluster.hotfix);
                           
                           return (
-                            <div key={cluster.id || Math.random()} className={`p-4 bg-slate-950 border-l-4 ${statusStyles} flex flex-col gap-3 relative group transition-all duration-300 hover:bg-slate-900`}>
+                            <div key={cluster.id || Math.random()} className={`p-4 bg-zinc-900 border-l-4 ${statusStyles} flex flex-col gap-3 relative group transition-all duration-300 hover:bg-zinc-800/80 shadow-md`}>
                               
                               <div className="flex justify-between items-start">
-                                <h3 className="font-bold text-white tracking-widest uppercase">{cluster.name || 'Unnamed Cluster'}</h3>
+                                <h3 className="font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                  {cluster.name || 'Unnamed GW'}
+                                </h3>
                                 <button 
                                   onClick={() => setEditModal({ customerId: customer.id, cluster })}
-                                  className="text-xs bg-slate-800 hover:bg-cyan-900 text-slate-400 hover:text-cyan-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-slate-700 rounded-sm"
+                                  className="text-xs bg-zinc-800 hover:bg-orange-950 text-orange-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-orange-500/30 rounded-sm font-bold"
                                 >
-                                  EDIT
+                                  EDIT GW
                                 </button>
                               </div>
 
                               <div className="grid grid-cols-2 gap-4 text-sm mt-1">
                                 <div>
-                                  <div className="text-slate-500 text-xs uppercase mb-1 tracking-wider">Version</div>
-                                  <div className="font-bold text-slate-300">{cluster.version || 'Unknown'}</div>
+                                  <div className="text-zinc-400 text-xs uppercase mb-1 tracking-wider font-semibold">Version</div>
+                                  <div className="font-bold text-white">{cluster.version || 'Unknown'}</div>
                                 </div>
                                 <div>
-                                  <div className="text-slate-500 text-xs uppercase mb-1 tracking-wider">JHF Level</div>
+                                  <div className="text-zinc-400 text-xs uppercase mb-1 tracking-wider font-semibold">JHF Level</div>
                                   <div className={`font-black ${statusStyles.split(' ')[2]}`}>
                                     {String(cluster.hotfix || 'Unknown')}
                                   </div>
                                 </div>
                               </div>
                               
-                              <div className="mt-3 bg-slate-900/80 p-2.5 text-xs text-slate-400 border border-slate-800 font-sans italic rounded-sm leading-relaxed">
-                                <span className="text-slate-500 font-bold uppercase not-italic mr-1 text-[10px]">Status:</span> 
+                              <div className="mt-2 bg-zinc-950 p-2.5 text-xs text-zinc-300 border border-zinc-800 font-sans italic rounded-sm leading-relaxed">
+                                <span className="text-orange-400 font-bold uppercase not-italic mr-1 text-[10px]">Status:</span> 
                                 {cluster.status || 'No status provided.'}
                               </div>
+
+                              {cluster.note && (
+                                <div className="mt-1 bg-orange-950/30 p-2.5 text-xs text-orange-200 border border-orange-500/30 font-sans rounded-sm flex items-start gap-2">
+                                  <FileText className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                                  <div>
+                                    <span className="font-bold uppercase tracking-wider text-[10px] block text-orange-400">Special Note:</span>
+                                    {cluster.note}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )
                         })
                       ) : (
-                        <div className="text-slate-500 italic text-sm py-4 w-full col-span-full text-center">
-                          No security clusters deployed or mapped to this perimeter.
+                        <div className="text-zinc-500 italic text-sm py-4 w-full col-span-full text-center">
+                          No Gateways (GWs) configured for this client perimeter. Click "+ Add GW" to deploy.
                         </div>
                       )}
                     </div>
@@ -288,59 +298,64 @@ export default function SOCDashboard() {
               </div>
             ))
           ) : (
-             <div className="text-slate-500 italic p-6 bg-slate-900 border border-slate-800 rounded-sm text-center">
-               No customer environments found in the database.
+             <div className="text-zinc-500 italic p-6 bg-zinc-900 border border-zinc-800 rounded-sm text-center">
+               No client perimeters found in database.
              </div>
           )}
         </div>
       </main>
 
-      {/* EDIT CLUSTER MODAL */}
+      {/* EDIT GATEWAY MODAL */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.15)] w-full max-w-lg overflow-hidden">
-            <div className="bg-slate-800 px-6 py-4 flex justify-between items-center border-b border-slate-700">
-              <h3 className="font-bold text-white tracking-widest uppercase">
-                {editModal.cluster.id ? 'Edit Cluster' : 'Deploy New Cluster'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-lg overflow-hidden">
+            <div className="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700">
+              <h3 className="font-extrabold text-white tracking-widest uppercase text-orange-400">
+                {editModal.cluster.id ? 'Edit Gateway (GW)' : 'Deploy New Gateway (GW)'}
               </h3>
-              <button onClick={() => setEditModal(null)} className="text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setEditModal(null)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
             <form onSubmit={handleSaveCluster} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">Cluster / Gateway Name</label>
-                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500 transition-colors" placeholder="e.g. Primary DC" />
+                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Gateway (GW) Name</label>
+                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors" placeholder="e.g. GW-DC-PRIMARY" />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">Version</label>
-                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500">
+                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Version</label>
+                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500">
                     <option value="R81.20">R81.20</option>
                     <option value="R82">R82</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">JHF Level</label>
-                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500" placeholder="e.g. Take 141" />
+                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">JHF Level</label>
+                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500" placeholder="e.g. Take 141" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">Implementation Status</label>
-                <textarea name="status" defaultValue={editModal.cluster.status} required rows={3} className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500 resize-none" placeholder="e.g. Upgraded successfully during weekend window." />
+                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Implementation Status</label>
+                <textarea name="status" defaultValue={editModal.cluster.status} required rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none" placeholder="e.g. Upgraded successfully" />
               </div>
 
-              <div className="pt-4 flex justify-between items-center border-t border-slate-800 mt-6">
+              <div>
+                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Special Note (Client / GW Specific)</label>
+                <textarea name="note" defaultValue={editModal.cluster.note} rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none" placeholder="e.g. Requires maintenance window approval from client ISO." />
+              </div>
+
+              <div className="pt-4 flex justify-between items-center border-t border-zinc-800 mt-6">
                 {editModal.cluster.id ? (
-                  <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 border border-red-500/30 hover:bg-red-950/30 transition-colors">
-                    Delete Cluster
+                  <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest px-4 py-2 border border-red-500/30 hover:bg-red-950/30 transition-colors font-bold">
+                    Delete GW
                   </button>
                 ) : <div></div>}
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setEditModal(null)} className="text-xs text-slate-400 hover:text-white uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
-                  <button type="submit" className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                    Save Changes
+                  <button type="button" onClick={() => setEditModal(null)} className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
+                  <button type="submit" className="text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+                    Save Gateway
                   </button>
                 </div>
               </div>
