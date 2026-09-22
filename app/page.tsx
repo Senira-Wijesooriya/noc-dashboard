@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History, Lock, Mail } from "lucide-react";
+import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History, Mail, CheckCircle2 } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -11,9 +11,10 @@ export default function SOCDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Auth Form State
-  const [emailInput, setEmailInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
+  // Office Mail Verification Modal State
+  const [showOfficeModal, setShowOfficeModal] = useState(false);
+  const [officeMailInput, setOfficeMailInput] = useState("");
+  const [verifiedOfficeMail, setVerifiedOfficeMail] = useState("");
 
   // Modals
   const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
@@ -39,43 +40,62 @@ export default function SOCDashboard() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        const email = u.email || '';
-        if (!email.endsWith('@mitesp.com') && !email.endsWith('@millenniumitesp.com')) {
-          await signOut(auth);
-          alert(`Access Denied (${email}): Only authorized corporate accounts are allowed.`);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
         setUser(u);
+        // Check if office mail is already stored in localStorage for this session
+        const savedOfficeMail = localStorage.getItem(`office_mail_${u.uid}`);
+        if (savedOfficeMail) {
+          setVerifiedOfficeMail(savedOfficeMail);
+          setShowOfficeModal(false);
+        } else {
+          setShowOfficeModal(true); // Trigger office mail popup prompt
+        }
         loadData();
         const interval = setInterval(loadData, 300000);
         return () => clearInterval(interval);
       } else {
         setUser(null);
+        setVerifiedOfficeMail("");
       }
       setLoading(false);
     });
     return () => unsub();
   }, []);
 
-  // Auto-Register on first login, normal sign-in afterwards
-  const handleAuthSubmit = async (e: React.FormEvent) => {
+  const login = async () => {
+    try { 
+      await signInWithPopup(auth, googleProvider); 
+    } catch (e: any) { 
+      alert(`Firebase Error: ${e.message}`); 
+    }
+  };
+
+  const handleOfficeMailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput.endsWith('@mitesp.com') && !emailInput.endsWith('@millenniumitesp.com')) {
-      alert("Access Denied: Only @mitesp.com or @millenniumitesp.com corporate accounts are authorized.");
+    const mail = officeMailInput.trim().toLowerCase();
+    
+    // Strict Domain Validation
+    if (!mail.endsWith('@mitesp.com') && !mail.endsWith('@millenniumitesp.com')) {
+      alert("Access Denied: Office mail must end with @mitesp.com or @millenniumitesp.com");
       return;
     }
-    try {
-      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-    } catch (err: any) {
-      // If account doesn't exist yet, automatically create it!
-      try {
-        await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
-      } catch (createErr: any) {
-        alert(`Authentication Error: ${createErr.message}`);
-      }
-    }
+
+    setVerifiedOfficeMail(mail);
+    localStorage.setItem(`office_mail_${user.uid}`, mail);
+    setShowOfficeModal(false);
+
+    // Send login audit log capturing both Gmail and Office Mail
+    await fetch("/api/dashboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        action: "update_customers", 
+        customers: data.customers,
+        logDescription: `User authenticated via Gmail (${user.email}) | Office Mail Verified: ${mail}`,
+        userEmail: mail,
+        userName: `${mail.split('@')[0]} (Gmail: ${user.email})`
+      })
+    });
+    loadData();
   };
 
   const handleForceSync = async () => {
@@ -86,8 +106,8 @@ export default function SOCDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           action: "force_sync",
-          userEmail: user?.email,
-          userName: user?.displayName || user?.email?.split('@')[0]
+          userEmail: verifiedOfficeMail,
+          userName: `${verifiedOfficeMail.split('@')[0]} (Gmail: ${user?.email})`
         })
       });
       if (res.ok) await loadData();
@@ -103,9 +123,9 @@ export default function SOCDashboard() {
       body: JSON.stringify({ 
         action: "update_customers", 
         customers: updatedCustomers,
-        logDescription: logDesc,
-        userEmail: user?.email,
-        userName: user?.displayName || user?.email?.split('@')[0]
+        logDescription: `${logDesc} | Executed by Office Mail: ${verifiedOfficeMail} (Gmail: ${user?.email})`,
+        userEmail: verifiedOfficeMail,
+        userName: `${verifiedOfficeMail.split('@')[0]} (Gmail: ${user?.email})`
       })
     });
     if (res.ok) {
@@ -204,47 +224,56 @@ export default function SOCDashboard() {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a2e_1px,transparent_1px),linear-gradient(to_bottom,#27272a2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-        <div className="z-10 bg-zinc-900 border border-orange-500/40 p-10 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
+        <div className="z-10 bg-zinc-900 border border-orange-500/40 p-12 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
           <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-white/5 p-2 rounded object-contain" />
           <h1 className="text-2xl font-black tracking-widest text-white mb-1 uppercase">Check Point Shipyard</h1>
-          <p className="text-orange-400 text-xs mb-2 tracking-widest uppercase">Fleet Command Center</p>
-          <p className="text-zinc-500 text-[11px] mb-6 font-sans">Enter your work email (@mitesp.com / @millenniumitesp.com)</p>
-          
-          <form onSubmit={handleAuthSubmit} className="space-y-4 text-left font-mono">
+          <p className="text-orange-400 text-xs mb-8 tracking-widest uppercase">Fleet Command Center</p>
+          <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] flex items-center justify-center gap-3">
+            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.24 10.28V14h5.52c-.24 1.44-1.68 4.2-5.52 4.2-3.32 0-6.04-2.76-6.04-6.16s2.72-6.16 6.04-6.16c1.88 0 3.16.8 3.88 1.48l2.96-2.88C17.32 2.92 14.96 2 12.24 2 6.92 2 2.6 6.32 2.6 11.64s4.32 9.64 9.64 9.64c5.56 0 9.24-3.92 9.24-9.44 0-.64-.08-1.12-.24-1.56H12.24z"/></svg>
+            Authenticate via Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // OFFICE MAIL VERIFICATION MODAL POPUP
+  if (showOfficeModal) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 font-mono">
+        <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_40px_rgba(249,115,22,0.3)] max-w-md w-full p-8 rounded-sm">
+          <div className="text-center mb-6">
+            <Mail className="w-12 h-12 text-orange-500 mx-auto mb-3 animate-bounce" />
+            <h2 className="text-xl font-black text-white uppercase tracking-wider">Office Mail Verification</h2>
+            <p className="text-xs text-zinc-400 mt-2">
+              Logged in via Gmail (<span className="text-orange-400">{user.email}</span>). Please enter your official corporate office mail to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleOfficeMailSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs text-orange-400 font-bold uppercase mb-1">Corporate Email</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
-                <input 
-                  type="email" 
-                  required 
-                  value={emailInput} 
-                  onChange={(e) => setEmailInput(e.target.value)} 
-                  placeholder="name@mitesp.com" 
-                  className="w-full bg-zinc-950 border border-zinc-700 text-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"
-                />
-              </div>
+              <label className="block text-xs text-orange-400 font-bold uppercase mb-1">Office Email Address</label>
+              <input 
+                type="email" 
+                required 
+                value={officeMailInput} 
+                onChange={(e) => setOfficeMailInput(e.target.value)} 
+                placeholder="name@mitesp.com" 
+                className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-3 text-sm focus:outline-none focus:border-orange-500"
+              />
+              <span className="text-[10px] text-zinc-500 mt-1 block">Must end with @mitesp.com or @millenniumitesp.com</span>
             </div>
 
-            <div>
-              <label className="block text-xs text-orange-400 font-bold uppercase mb-1">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
-                <input 
-                  type="password" 
-                  required 
-                  value={passwordInput} 
-                  onChange={(e) => setPasswordInput(e.target.value)} 
-                  placeholder="••••••••" 
-                  className="w-full bg-zinc-950 border border-zinc-700 text-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 transition-all uppercase tracking-widest border border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] text-xs mt-2">
-              Secure Login
+            <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 transition-all uppercase tracking-widest text-xs border border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+              Verify & Proceed to Shipyard
             </button>
           </form>
+
+          <div className="mt-6 text-center border-t border-zinc-800 pt-4">
+            <button onClick={() => signOut(auth)} className="text-xs text-zinc-500 hover:text-red-400 underline uppercase tracking-wider">
+              Sign out & use a different account
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -295,10 +324,10 @@ export default function SOCDashboard() {
           </div>
 
           <div className="text-right hidden md:block pl-6 border-l border-zinc-800">
-            <div className="text-sm font-bold text-white uppercase">{user?.displayName || user?.email?.split('@')[0]}</div>
-            <div className="text-xs text-orange-400 font-bold tracking-wider">Cyber Security Engineer</div>
+            <div className="text-sm font-bold text-orange-400 uppercase">{verifiedOfficeMail}</div>
+            <div className="text-xs text-zinc-400 font-semibold tracking-wider">Cyber Security Engineer <span className="text-[10px] text-zinc-500">(Gmail: {user?.email})</span></div>
           </div>
-          <button onClick={() => signOut(auth)} className="text-zinc-400 hover:text-orange-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
+          <button onClick={() => { localStorage.clear(); signOut(auth); }} className="text-zinc-400 hover:text-orange-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
         </div>
       </nav>
 
@@ -432,7 +461,7 @@ export default function SOCDashboard() {
               <div className="flex items-center gap-2">
                 <History className="w-5 h-5 text-orange-400" />
                 <h3 className="font-extrabold text-white tracking-widest uppercase text-orange-400 text-sm">
-                  System Audit Trail & Activity Log
+                  System Audit Trail & Activity Log (Dual-Email Tracked)
                 </h3>
               </div>
               <button onClick={() => setShowLogModal(false)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
