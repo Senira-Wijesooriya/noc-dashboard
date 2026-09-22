@@ -66,26 +66,50 @@ export async function GET() {
       customers = INITIAL_CUSTOMERS;
     }
 
+    let logs = await kv.get("data:logs");
+    if (!logs) {
+      logs = [];
+    }
+
     return NextResponse.json({ 
       targets, 
       lastUpdated,
-      customers: typeof customers === 'string' ? JSON.parse(customers) : customers 
+      customers: typeof customers === 'string' ? JSON.parse(customers) : customers,
+      logs: typeof logs === 'string' ? JSON.parse(logs) : logs
     });
   } catch (error) {
-    return NextResponse.json({ targets: { "R81.20": "170", "R82": "127" }, customers: INITIAL_CUSTOMERS });
+    return NextResponse.json({ targets: { "R81.20": "170", "R82": "127" }, customers: INITIAL_CUSTOMERS, logs: [] });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const userEmail = body.userEmail || 'Unknown User';
+    const userName = body.userName || 'Engineer';
     
+    let logs: any = (await kv.get("data:logs")) || [];
+    if (typeof logs === 'string') logs = JSON.parse(logs);
+
+    const recordLog = (desc: string) => {
+      const newLog = {
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userEmail,
+        userName,
+        description: desc,
+        timestamp: Date.now()
+      };
+      logs = [newLog, ...logs].slice(0, 100); // Keep last 100 actions
+    };
+
     if (body.action === 'force_sync') {
       const scrapedTargets = await scrapeCheckPoint();
       if (scrapedTargets) {
         await kv.hset("settings:targets", scrapedTargets);
         await kv.set("settings:targets_last_updated", Date.now());
-        return NextResponse.json({ success: true, targets: scrapedTargets });
+        recordLog(`Forced Check Point Sync (R81.20: Take ${scrapedTargets["R81.20"]}, R82: Take ${scrapedTargets["R82"]})`);
+        await kv.set("data:logs", JSON.stringify(logs));
+        return NextResponse.json({ success: true, targets: scrapedTargets, logs });
       }
       return NextResponse.json({ success: false, error: "Scrape failed" }, { status: 500 });
     }
@@ -93,7 +117,9 @@ export async function POST(req: Request) {
     if (body.action === 'update_customers') {
       if (body.customers) {
         await kv.set("data:customers", JSON.stringify(body.customers));
-        return NextResponse.json({ success: true });
+        recordLog(body.logDescription || `Modified client perimeters or cluster configurations`);
+        await kv.set("data:logs", JSON.stringify(logs));
+        return NextResponse.json({ success: true, logs });
       }
     }
     

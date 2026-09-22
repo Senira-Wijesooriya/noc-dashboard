@@ -2,17 +2,18 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2 } from "lucide-react";
+import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>({ targets: { "R81.20": "170", "R82": "127" }, customers: [], lastUpdated: 0 });
+  const [data, setData] = useState<any>({ targets: { "R81.20": "170", "R82": "127" }, customers: [], logs: [], lastUpdated: 0 });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Modal State for Clusters
+  // Modals
   const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
+  const [showLogModal, setShowLogModal] = useState(false);
 
   const loadData = async () => {
     try {
@@ -22,6 +23,7 @@ export default function SOCDashboard() {
         setData({
           targets: json.targets || { "R81.20": "170", "R82": "127" },
           customers: Array.isArray(json.customers) ? json.customers : [],
+          logs: Array.isArray(json.logs) ? json.logs : [],
           lastUpdated: json.lastUpdated || 0
         });
       }
@@ -31,21 +33,35 @@ export default function SOCDashboard() {
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
+    const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
+        const email = u.email || '';
+        // ENFORCE DOMAIN RESTRICTION
+        if (!email.endsWith('@mitesp.com') && !email.endsWith('@millenniumitesp.com')) {
+          await signOut(auth);
+          alert(`Access Denied (${email}): Only @mitesp.com or @millenniumitesp.com accounts are authorized to access this secure ship environment.`);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        setUser(u);
         loadData();
         const interval = setInterval(loadData, 300000);
         return () => clearInterval(interval);
+      } else {
+        setUser(null);
       }
+      setLoading(false);
     });
     return () => unsub();
   }, []);
 
   const login = async () => {
-    try { await signInWithPopup(auth, googleProvider); } 
-    catch (e: any) { alert(`Firebase Error: ${e.message}`); }
+    try { 
+      await signInWithPopup(auth, googleProvider); 
+    } catch (e: any) { 
+      alert(`Firebase Error: ${e.message}`); 
+    }
   };
 
   const handleForceSync = async () => {
@@ -54,20 +70,34 @@ export default function SOCDashboard() {
       const res = await fetch("/api/dashboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "force_sync" })
+        body: JSON.stringify({ 
+          action: "force_sync",
+          userEmail: user?.email,
+          userName: user?.displayName
+        })
       });
       if (res.ok) await loadData();
     } catch (e) { console.error(e); }
     setIsUpdating(false);
   };
 
-  const saveCustomersToDB = async (updatedCustomers: any) => {
+  const saveCustomersToDB = async (updatedCustomers: any, logDesc: string) => {
     setData({ ...data, customers: updatedCustomers });
-    await fetch("/api/dashboard", {
+    const res = await fetch("/api/dashboard", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update_customers", customers: updatedCustomers })
+      body: JSON.stringify({ 
+        action: "update_customers", 
+        customers: updatedCustomers,
+        logDescription: logDesc,
+        userEmail: user?.email,
+        userName: user?.displayName
+      })
     });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.logs) setData((prev: any) => ({ ...prev, logs: json.logs }));
+    }
   };
 
   const handleAddClient = () => {
@@ -79,7 +109,7 @@ export default function SOCDashboard() {
       name: name.toUpperCase(),
       clusters: []
     };
-    saveCustomersToDB([...data.customers, newCustomer]);
+    saveCustomersToDB([...data.customers, newCustomer], `Added client perimeter: ${name.toUpperCase()}`);
   };
 
   const handleDeleteClient = (customerId: string, customerName: string, e: React.MouseEvent) => {
@@ -87,7 +117,7 @@ export default function SOCDashboard() {
     if (!confirm(`Are you sure you want to delete client perimeter "${customerName}" and all its clusters?`)) return;
 
     const updatedCustomers = data.customers.filter((c: any) => c.id !== customerId);
-    saveCustomersToDB(updatedCustomers);
+    saveCustomersToDB(updatedCustomers, `Deleted client perimeter: ${customerName}`);
   };
 
   const handleSaveCluster = (e: React.FormEvent) => {
@@ -95,13 +125,16 @@ export default function SOCDashboard() {
     if (!editModal) return;
 
     const formData = new FormData(e.target as HTMLFormElement);
+    const clusterName = formData.get("name");
+    const isNew = !editModal.cluster.id;
+
     const updatedCluster = {
       id: editModal.cluster.id || `cl_${Date.now()}`,
-      name: formData.get("name"),
+      name: clusterName,
       version: formData.get("version"),
       hotfix: formData.get("hotfix"),
       model: formData.get("model"),
-      clusterType: formData.get("clusterType"), // Cluster vs Single GW
+      clusterType: formData.get("clusterType"),
       status: formData.get("status"),
       note: formData.get("note"),
     };
@@ -117,7 +150,8 @@ export default function SOCDashboard() {
       return c;
     });
 
-    saveCustomersToDB(updatedCustomers);
+    const actionText = isNew ? `Deployed cluster "${clusterName}"` : `Updated cluster "${clusterName}"`;
+    saveCustomersToDB(updatedCustomers, actionText);
     setEditModal(null);
   };
 
@@ -125,6 +159,7 @@ export default function SOCDashboard() {
     if (!editModal || !editModal.cluster.id) return;
     if (!confirm(`Are you sure you want to delete cluster ${editModal.cluster.name}?`)) return;
 
+    const clusterName = editModal.cluster.name;
     const updatedCustomers = data.customers.map((c: any) => {
       if (c.id === editModal.customerId) {
         return { ...c, clusters: c.clusters.filter((cl: any) => cl.id !== editModal.cluster.id) };
@@ -132,7 +167,7 @@ export default function SOCDashboard() {
       return c;
     });
 
-    saveCustomersToDB(updatedCustomers);
+    saveCustomersToDB(updatedCustomers, `Deleted cluster "${clusterName}"`);
     setEditModal(null);
   };
 
@@ -158,7 +193,8 @@ export default function SOCDashboard() {
         <div className="z-10 bg-zinc-900 border border-orange-500/40 p-12 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
           <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-white/5 p-2 rounded" />
           <h1 className="text-2xl font-black tracking-widest text-white mb-1 uppercase">Check Point Shipyard</h1>
-          <p className="text-orange-400 text-xs mb-8 tracking-widest uppercase">Fleet Command Center</p>
+          <p className="text-orange-400 text-xs mb-2 tracking-widest uppercase">Fleet Command Center</p>
+          <p className="text-zinc-500 text-[11px] mb-8 font-sans">Authorized personnel only (@mitesp.com / @millenniumitesp.com)</p>
           <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
             Authenticate via Identity Provider
           </button>
@@ -193,6 +229,14 @@ export default function SOCDashboard() {
         </div>
         
         <div className="flex items-center gap-6">
+          <button 
+            onClick={() => setShowLogModal(true)}
+            className="flex items-center gap-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-2 border border-zinc-700 uppercase tracking-widest transition-colors"
+          >
+            <History className="w-4 h-4 text-orange-400" />
+            Audit Logs ({data?.logs?.length || 0})
+          </button>
+
           <div className="flex flex-col items-end">
             <button onClick={handleForceSync} disabled={isUpdating} className="flex items-center gap-2 text-xs bg-orange-950 hover:bg-orange-900 text-orange-400 px-4 py-1.5 border border-orange-500/40 uppercase tracking-widest transition-colors disabled:opacity-50">
               <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
@@ -204,7 +248,7 @@ export default function SOCDashboard() {
           </div>
 
           <div className="text-right hidden md:block pl-6 border-l border-zinc-800">
-            <div className="text-sm font-bold text-white uppercase">{user?.displayName || 'Senira Wijesooriya'}</div>
+            <div className="text-sm font-bold text-white uppercase">{user?.displayName || 'Engineer'}</div>
             <div className="text-xs text-orange-400 font-bold tracking-wider">Cyber Security Engineer</div>
           </div>
           <button onClick={() => signOut(auth)} className="text-zinc-400 hover:text-orange-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
@@ -332,6 +376,45 @@ export default function SOCDashboard() {
           )}
         </div>
       </main>
+
+      {/* AUDIT LOG MODAL */}
+      {showLogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-orange-400" />
+                <h3 className="font-extrabold text-white tracking-widest uppercase text-orange-400 text-sm">
+                  System Audit Trail & Activity Log
+                </h3>
+              </div>
+              <button onClick={() => setShowLogModal(false)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-3 font-mono flex-1">
+              {Array.isArray(data.logs) && data.logs.length > 0 ? (
+                data.logs.map((log: any) => (
+                  <div key={log.id} className="bg-zinc-950 p-3 border border-zinc-800 rounded text-xs space-y-1">
+                    <div className="flex justify-between items-center text-zinc-400">
+                      <span className="text-orange-400 font-bold">{log.userName || 'Engineer'} <span className="text-zinc-500 font-normal">({log.userEmail})</span></span>
+                      <span>{new Date(log.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div className="text-zinc-200 font-semibold">{log.description}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-zinc-500 text-center py-8 italic">No audit log history recorded yet.</div>
+              )}
+            </div>
+
+            <div className="bg-zinc-950 px-6 py-3 border-t border-zinc-800 flex justify-end">
+              <button onClick={() => setShowLogModal(false)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 text-xs uppercase font-bold tracking-wider">
+                Close Log
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* EDIT CLUSTER MODAL */}
       {editModal && (
