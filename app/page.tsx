@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw, Plus, X } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -10,13 +10,14 @@ export default function SOCDashboard() {
   const [data, setData] = useState<any>({ targets: { "R81.20": "170", "R82": "127" }, customers: [], lastUpdated: 0 });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Modal State
+  const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
 
   const loadData = async () => {
     try {
       const res = await fetch("/api/dashboard");
       const json = await res.json();
-      
-      // Ensure the incoming data is structured safely before applying it
       if (json && typeof json === 'object') {
         setData({
           targets: json.targets || { "R81.20": "170", "R82": "127" },
@@ -43,11 +44,8 @@ export default function SOCDashboard() {
   }, []);
 
   const login = async () => {
-    try { 
-      await signInWithPopup(auth, googleProvider); 
-    } catch (e: any) { 
-      alert(`Firebase Error: ${e.message}`); 
-    }
+    try { await signInWithPopup(auth, googleProvider); } 
+    catch (e: any) { alert(`Firebase Error: ${e.message}`); }
   };
 
   const handleForceSync = async () => {
@@ -59,21 +57,82 @@ export default function SOCDashboard() {
         body: JSON.stringify({ action: "force_sync" })
       });
       if (res.ok) await loadData();
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
     setIsUpdating(false);
   };
 
-  // Bulletproofed color status logic
+  // --- NEW WRITE FUNCTIONS --- //
+  
+  const saveCustomersToDB = async (updatedCustomers: any) => {
+    setData({ ...data, customers: updatedCustomers });
+    await fetch("/api/dashboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update_customers", customers: updatedCustomers })
+    });
+  };
+
+  const handleAddClient = () => {
+    const name = prompt("Enter new Client Perimeter Name (e.g. NTB, Seylan):");
+    if (!name) return;
+    
+    const newCustomer = {
+      id: `c_${Date.now()}`,
+      name: name.toUpperCase(),
+      clusters: []
+    };
+    saveCustomersToDB([...data.customers, newCustomer]);
+  };
+
+  const handleSaveCluster = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModal) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const updatedCluster = {
+      id: editModal.cluster.id || `cl_${Date.now()}`,
+      name: formData.get("name"),
+      version: formData.get("version"),
+      hotfix: formData.get("hotfix"),
+      status: formData.get("status"),
+    };
+
+    const updatedCustomers = data.customers.map((c: any) => {
+      if (c.id === editModal.customerId) {
+        const exists = c.clusters?.find((cl: any) => cl.id === updatedCluster.id);
+        const newClusters = exists 
+          ? c.clusters.map((cl: any) => cl.id === updatedCluster.id ? updatedCluster : cl)
+          : [...(c.clusters || []), updatedCluster];
+        return { ...c, clusters: newClusters };
+      }
+      return c;
+    });
+
+    saveCustomersToDB(updatedCustomers);
+    setEditModal(null);
+  };
+
+  const handleDeleteCluster = () => {
+    if (!editModal || !editModal.cluster.id) return;
+    if (!confirm(`Are you sure you want to delete ${editModal.cluster.name}?`)) return;
+
+    const updatedCustomers = data.customers.map((c: any) => {
+      if (c.id === editModal.customerId) {
+        return { ...c, clusters: c.clusters.filter((cl: any) => cl.id !== editModal.cluster.id) };
+      }
+      return c;
+    });
+
+    saveCustomersToDB(updatedCustomers);
+    setEditModal(null);
+  };
+
+  // --------------------------- //
+
   const getStatusColor = (version: string, currentTake: any) => {
-    // Force inputs into strings to prevent .replace() crashes if numbers are passed
     const targetTakeStr = String(data?.targets?.[version] || '');
     const currentTakeStr = String(currentTake || '');
-
-    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') {
-      return "border-gray-600 text-gray-400"; 
-    }
+    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') return "border-gray-600 text-gray-400"; 
     
     const current = parseInt(currentTakeStr.replace(/\D/g, '')) || 0;
     const target = parseInt(targetTakeStr.replace(/\D/g, '')) || 0;
@@ -126,11 +185,7 @@ export default function SOCDashboard() {
         
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end">
-            <button 
-              onClick={handleForceSync}
-              disabled={isUpdating}
-              className="flex items-center gap-2 text-xs bg-cyan-900/40 hover:bg-cyan-900 text-cyan-400 px-4 py-1.5 border border-cyan-500/30 uppercase tracking-widest transition-colors disabled:opacity-50"
-            >
+            <button onClick={handleForceSync} disabled={isUpdating} className="flex items-center gap-2 text-xs bg-cyan-900/40 hover:bg-cyan-900 text-cyan-400 px-4 py-1.5 border border-cyan-500/30 uppercase tracking-widest transition-colors disabled:opacity-50">
               <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
               {isUpdating ? 'Pinging CP Servers...' : 'Force CP Sync'}
             </button>
@@ -143,9 +198,7 @@ export default function SOCDashboard() {
             <div className="text-sm font-bold text-white uppercase">{user?.displayName || 'Engineer'}</div>
             <div className="text-xs text-slate-500">Security Operations</div>
           </div>
-          <button onClick={() => signOut(auth)} className="text-slate-400 hover:text-red-400 transition-colors" title="Log Out">
-            <LogOut className="w-5 h-5" />
-          </button>
+          <button onClick={() => signOut(auth)} className="text-slate-400 hover:text-red-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
         </div>
       </nav>
 
@@ -154,7 +207,7 @@ export default function SOCDashboard() {
         
         <div className="flex justify-between items-end mb-8 border-b border-slate-800 pb-4 mt-4">
           <h2 className="text-2xl text-white font-bold uppercase tracking-wider">Client Perimeters</h2>
-          <button className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors shadow-[0_0_10px_rgba(6,182,212,0.1)] hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+          <button onClick={handleAddClient} className="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors shadow-[0_0_10px_rgba(6,182,212,0.1)] hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]">
             + Add Client Perimeter
           </button>
         </div>
@@ -164,19 +217,25 @@ export default function SOCDashboard() {
             data.customers.map((customer: any) => (
               <div key={customer.id || Math.random()} className="bg-slate-900 border border-slate-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
                 
-                <button 
-                  onClick={() => setExpanded(expanded === customer.id ? null : customer.id)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/80 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
+                <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/80 transition-colors group">
+                  <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => setExpanded(expanded === customer.id ? null : customer.id)}>
                     <Server className="text-cyan-600 w-6 h-6" />
                     <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
                     <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded-sm border border-slate-700">
                       {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Clusters
                     </span>
                   </div>
-                  <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${expanded === customer.id ? 'rotate-180' : ''}`} />
-                </button>
+                  
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', status: '' } })}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-slate-800 hover:bg-cyan-900 text-cyan-400 px-3 py-1 border border-cyan-500/30 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> Add Cluster
+                    </button>
+                    <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
+                  </div>
+                </div>
 
                 <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-slate-800' : 'grid-rows-[0fr] opacity-0'}`}>
                   <div className="overflow-hidden">
@@ -190,7 +249,10 @@ export default function SOCDashboard() {
                               
                               <div className="flex justify-between items-start">
                                 <h3 className="font-bold text-white tracking-widest uppercase">{cluster.name || 'Unnamed Cluster'}</h3>
-                                <button className="text-xs bg-slate-800 hover:bg-cyan-900 text-slate-400 hover:text-cyan-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-slate-700 rounded-sm">
+                                <button 
+                                  onClick={() => setEditModal({ customerId: customer.id, cluster })}
+                                  className="text-xs bg-slate-800 hover:bg-cyan-900 text-slate-400 hover:text-cyan-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-slate-700 rounded-sm"
+                                >
                                   EDIT
                                 </button>
                               </div>
@@ -232,6 +294,60 @@ export default function SOCDashboard() {
           )}
         </div>
       </main>
+
+      {/* EDIT CLUSTER MODAL */}
+      {editModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.15)] w-full max-w-lg overflow-hidden">
+            <div className="bg-slate-800 px-6 py-4 flex justify-between items-center border-b border-slate-700">
+              <h3 className="font-bold text-white tracking-widest uppercase">
+                {editModal.cluster.id ? 'Edit Cluster' : 'Deploy New Cluster'}
+              </h3>
+              <button onClick={() => setEditModal(null)} className="text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <form onSubmit={handleSaveCluster} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">Cluster / Gateway Name</label>
+                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500 transition-colors" placeholder="e.g. Primary DC" />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">Version</label>
+                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500">
+                    <option value="R81.20">R81.20</option>
+                    <option value="R82">R82</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">JHF Level</label>
+                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500" placeholder="e.g. Take 141" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-cyan-500 uppercase tracking-wider mb-1">Implementation Status</label>
+                <textarea name="status" defaultValue={editModal.cluster.status} required rows={3} className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-2 focus:outline-none focus:border-cyan-500 resize-none" placeholder="e.g. Upgraded successfully during weekend window." />
+              </div>
+
+              <div className="pt-4 flex justify-between items-center border-t border-slate-800 mt-6">
+                {editModal.cluster.id ? (
+                  <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 border border-red-500/30 hover:bg-red-950/30 transition-colors">
+                    Delete Cluster
+                  </button>
+                ) : <div></div>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEditModal(null)} className="text-xs text-slate-400 hover:text-white uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
+                  <button type="submit" className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }

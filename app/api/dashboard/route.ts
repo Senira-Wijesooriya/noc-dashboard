@@ -90,7 +90,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // Force manual sync button handler
+    // 1. Force manual scrape sync
     if (body.action === 'force_sync') {
       const scrapedTargets = await scrapeCheckPoint();
       if (scrapedTargets) {
@@ -100,6 +100,15 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ success: false, error: "Scrape failed" }, { status: 500 });
     }
+    
+    // 2. Save new or edited customer/cluster data
+    if (body.action === 'update_customers') {
+      if (body.customers) {
+        await kv.set("data:customers", JSON.stringify(body.customers));
+        return NextResponse.json({ success: true });
+      }
+    }
+    
     return NextResponse.json({ success: false });
   } catch (error) {
     return NextResponse.json({ success: false, error: "Failed to update" }, { status: 500 });
