@@ -14,7 +14,6 @@ export default function SOCDashboard() {
   // Auth Form State
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
 
   // Modals
   const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
@@ -60,6 +59,7 @@ export default function SOCDashboard() {
     return () => unsub();
   }, []);
 
+  // Auto-Register on first login, normal sign-in afterwards
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.endsWith('@mitesp.com') && !emailInput.endsWith('@millenniumitesp.com')) {
@@ -67,14 +67,14 @@ export default function SOCDashboard() {
       return;
     }
     try {
-      if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
-        alert("Account created successfully! You are now logged in.");
-      } else {
-        await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-      }
+      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
     } catch (err: any) {
-      alert(`Authentication Error: ${err.message}`);
+      // If account doesn't exist yet, automatically create it!
+      try {
+        await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
+      } catch (createErr: any) {
+        alert(`Authentication Error: ${createErr.message}`);
+      }
     }
   };
 
@@ -242,18 +242,8 @@ export default function SOCDashboard() {
             </div>
 
             <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 transition-all uppercase tracking-widest border border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] text-xs mt-2">
-              {isRegistering ? 'Register Corporate Account' : 'Secure Login'}
+              Secure Login
             </button>
-
-            <div className="text-center pt-2">
-              <button 
-                type="button" 
-                onClick={() => setIsRegistering(!isRegistering)} 
-                className="text-xs text-zinc-400 hover:text-orange-400 underline transition-colors"
-              >
-                {isRegistering ? 'Already have an account? Sign in' : 'First time? Create your password here'}
-              </button>
-            </div>
           </form>
         </div>
       </div>
