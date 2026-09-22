@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu } from "lucide-react";
+import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -92,9 +92,9 @@ export default function SOCDashboard() {
       name: formData.get("name"),
       version: formData.get("version"),
       hotfix: formData.get("hotfix"),
-      model: formData.get("model"), // Device Model
+      model: formData.get("model"),
       status: formData.get("status"),
-      note: formData.get("note"), // Special Note
+      note: formData.get("note"),
     };
 
     const updatedCustomers = data.customers.map((c: any) => {
@@ -147,9 +147,9 @@ export default function SOCDashboard() {
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a2e_1px,transparent_1px),linear-gradient(to_bottom,#27272a2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
         <div className="z-10 bg-zinc-900 border border-orange-500/40 p-12 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
-          <ShieldAlert className="w-20 h-20 mx-auto text-orange-500 mb-6 animate-pulse" />
-          <h1 className="text-3xl font-black tracking-widest text-white mb-1 uppercase">MITesp Shipyard</h1>
-          <p className="text-orange-400 text-xs mb-8 tracking-widest uppercase">Check Point Fleet Command</p>
+          <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-white/5 p-2 rounded" />
+          <h1 className="text-2xl font-black tracking-widest text-white mb-1 uppercase">Check Point Shipyard</h1>
+          <p className="text-orange-400 text-xs mb-8 tracking-widest uppercase">Fleet Command Center</p>
           <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
             Authenticate via Identity Provider
           </button>
@@ -172,12 +172,14 @@ export default function SOCDashboard() {
       </div>
 
       {/* NAVBAR */}
-      <nav className="border-b border-zinc-800 bg-zinc-900/80 px-6 py-4 flex justify-between items-center backdrop-blur-md sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="text-orange-500 w-8 h-8" />
-          <div>
-            <h1 className="text-xl font-black text-white tracking-widest leading-none">MITesp</h1>
-            <span className="text-xs text-orange-400 tracking-[0.2em] font-bold">CHECK POINT SHIPYARD</span>
+      <nav className="border-b border-zinc-800 bg-zinc-900/90 px-6 py-3 flex justify-between items-center backdrop-blur-md sticky top-0 z-20 shadow-lg">
+        <div className="flex items-center gap-4">
+          <div className="bg-white px-3 py-1.5 rounded flex items-center shadow-sm">
+            <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-8 w-auto object-contain" />
+          </div>
+          <div className="border-l border-zinc-700 pl-4">
+            <h1 className="text-base font-black text-white tracking-widest leading-none">CHECK POINT SHIPYARD</h1>
+            <span className="text-[11px] text-orange-400 tracking-[0.2em] font-bold">ENTERPRISE SECURITY MATRIX</span>
           </div>
         </div>
         
