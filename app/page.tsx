@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History, Mail, CheckCircle2 } from "lucide-react";
+import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History, Mail } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -38,27 +38,34 @@ export default function SOCDashboard() {
   };
 
   useEffect(() => {
+    // Safety Timeout: Prevent getting stuck on initialization forever if Firebase is slow
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     const unsub = onAuthStateChanged(auth, async (u) => {
+      clearTimeout(safetyTimer);
       if (u) {
         setUser(u);
-        // Check if office mail is already stored in localStorage for this session
         const savedOfficeMail = localStorage.getItem(`office_mail_${u.uid}`);
         if (savedOfficeMail) {
           setVerifiedOfficeMail(savedOfficeMail);
           setShowOfficeModal(false);
         } else {
-          setShowOfficeModal(true); // Trigger office mail popup prompt
+          setShowOfficeModal(true);
         }
         loadData();
-        const interval = setInterval(loadData, 300000);
-        return () => clearInterval(interval);
       } else {
         setUser(null);
         setVerifiedOfficeMail("");
       }
       setLoading(false);
     });
-    return () => unsub();
+
+    return () => {
+      clearTimeout(safetyTimer);
+      unsub();
+    };
   }, []);
 
   const login = async () => {
@@ -83,7 +90,6 @@ export default function SOCDashboard() {
     localStorage.setItem(`office_mail_${user.uid}`, mail);
     setShowOfficeModal(false);
 
-    // Send login audit log capturing both Gmail and Office Mail
     await fetch("/api/dashboard", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -270,7 +276,7 @@ export default function SOCDashboard() {
           </form>
 
           <div className="mt-6 text-center border-t border-zinc-800 pt-4">
-            <button onClick={() => signOut(auth)} className="text-xs text-zinc-500 hover:text-red-400 underline uppercase tracking-wider">
+            <button onClick={() => { localStorage.clear(); signOut(auth); }} className="text-xs text-zinc-500 hover:text-red-400 underline uppercase tracking-wider">
               Sign out & use a different account
             </button>
           </div>
