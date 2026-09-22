@@ -88,6 +88,10 @@ export async function POST(req: Request) {
     const userEmail = body.userEmail || 'Unknown User';
     const userName = body.userName || 'Engineer';
     
+    // Extract IP Address from headers
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ipAddress = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") || "127.0.0.1");
+
     let logs: any = (await kv.get("data:logs")) || [];
     if (typeof logs === 'string') logs = JSON.parse(logs);
 
@@ -96,10 +100,11 @@ export async function POST(req: Request) {
         id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         userEmail,
         userName,
+        ipAddress,
         description: desc,
         timestamp: Date.now()
       };
-      logs = [newLog, ...logs].slice(0, 100); // Keep last 100 actions
+      logs = [newLog, ...logs].slice(0, 100);
     };
 
     if (body.action === 'force_sync') {

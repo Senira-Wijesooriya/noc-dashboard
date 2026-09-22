@@ -38,7 +38,6 @@ export default function SOCDashboard() {
   };
 
   useEffect(() => {
-    // Safety Timeout: Prevent getting stuck on initialization forever if Firebase is slow
     const safetyTimer = setTimeout(() => {
       setLoading(false);
     }, 3000);
@@ -80,7 +79,6 @@ export default function SOCDashboard() {
     e.preventDefault();
     const mail = officeMailInput.trim().toLowerCase();
     
-    // Strict Domain Validation
     if (!mail.endsWith('@mitesp.com') && !mail.endsWith('@millenniumitesp.com')) {
       alert("Access Denied: Office mail must end with @mitesp.com or @millenniumitesp.com");
       return;
@@ -96,9 +94,9 @@ export default function SOCDashboard() {
       body: JSON.stringify({ 
         action: "update_customers", 
         customers: data.customers,
-        logDescription: `User authenticated via Gmail (${user.email}) | Office Mail Verified: ${mail}`,
+        logDescription: `User authenticated via Office Mail: ${mail}`,
         userEmail: mail,
-        userName: `${mail.split('@')[0]} (Gmail: ${user.email})`
+        userName: mail.split('@')[0].toUpperCase()
       })
     });
     loadData();
@@ -113,7 +111,7 @@ export default function SOCDashboard() {
         body: JSON.stringify({ 
           action: "force_sync",
           userEmail: verifiedOfficeMail,
-          userName: `${verifiedOfficeMail.split('@')[0]} (Gmail: ${user?.email})`
+          userName: verifiedOfficeMail.split('@')[0].toUpperCase()
         })
       });
       if (res.ok) await loadData();
@@ -129,9 +127,9 @@ export default function SOCDashboard() {
       body: JSON.stringify({ 
         action: "update_customers", 
         customers: updatedCustomers,
-        logDescription: `${logDesc} | Executed by Office Mail: ${verifiedOfficeMail} (Gmail: ${user?.email})`,
+        logDescription: `${logDesc} | Executed by Office Mail: ${verifiedOfficeMail}`,
         userEmail: verifiedOfficeMail,
-        userName: `${verifiedOfficeMail.split('@')[0]} (Gmail: ${user?.email})`
+        userName: verifiedOfficeMail.split('@')[0].toUpperCase()
       })
     });
     if (res.ok) {
@@ -214,27 +212,27 @@ export default function SOCDashboard() {
   const getStatusColor = (version: string, currentTake: any) => {
     const targetTakeStr = String(data?.targets?.[version] || '');
     const currentTakeStr = String(currentTake || '');
-    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') return "border-zinc-700 text-zinc-400"; 
+    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') return "border-slate-300 text-slate-500"; 
     
     const current = parseInt(currentTakeStr.replace(/\D/g, '')) || 0;
     const target = parseInt(targetTakeStr.replace(/\D/g, '')) || 0;
 
-    if (current >= target) return "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] text-emerald-400";
-    if (current >= target - 20) return "border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)] text-amber-400";
-    return "border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)] text-orange-400";
+    if (current >= target) return "border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] text-emerald-600";
+    if (current >= target - 20) return "border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)] text-amber-600";
+    return "border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)] text-orange-600";
   };
 
-  if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-orange-500 font-mono tracking-widest">INITIALIZING MITESP SECURE SHIPYARD...</div>;
+  if (loading) return <div className="min-h-screen bg-white flex items-center justify-center text-orange-600 font-mono tracking-widest font-bold">INITIALIZING MITESP SECURE SHIPYARD...</div>;
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white font-mono relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a2e_1px,transparent_1px),linear-gradient(to_bottom,#27272a2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-        <div className="z-10 bg-zinc-900 border border-orange-500/40 p-12 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
-          <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-white/5 p-2 rounded object-contain" />
-          <h1 className="text-2xl font-black tracking-widest text-white mb-1 uppercase">Check Point Shipyard</h1>
-          <p className="text-orange-400 text-xs mb-8 tracking-widest uppercase">Fleet Command Center</p>
-          <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] flex items-center justify-center gap-3">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-900 font-mono relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="z-10 bg-white border border-orange-500/30 p-12 shadow-[0_10px_30px_rgba(249,115,22,0.15)] text-center max-w-md w-full rounded-sm">
+          <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-slate-50 p-2 rounded object-contain border border-slate-200" />
+          <h1 className="text-2xl font-black tracking-widest text-slate-900 mb-1 uppercase">Check Point Shipyard</h1>
+          <p className="text-orange-600 text-xs mb-8 tracking-widest uppercase font-bold">Fleet Command Center</p>
+          <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border border-orange-500 shadow-[0_4px_12px_rgba(249,115,22,0.3)] flex items-center justify-center gap-3">
             <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.24 10.28V14h5.52c-.24 1.44-1.68 4.2-5.52 4.2-3.32 0-6.04-2.76-6.04-6.16s2.72-6.16 6.04-6.16c1.88 0 3.16.8 3.88 1.48l2.96-2.88C17.32 2.92 14.96 2 12.24 2 6.92 2 2.6 6.32 2.6 11.64s4.32 9.64 9.64 9.64c5.56 0 9.24-3.92 9.24-9.44 0-.64-.08-1.12-.24-1.56H12.24z"/></svg>
             Authenticate via Google
           </button>
@@ -246,37 +244,37 @@ export default function SOCDashboard() {
   // OFFICE MAIL VERIFICATION MODAL POPUP
   if (showOfficeModal) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 font-mono">
-        <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_40px_rgba(249,115,22,0.3)] max-w-md w-full p-8 rounded-sm">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-mono">
+        <div className="bg-white border border-orange-500/40 shadow-[0_10px_30px_rgba(249,115,22,0.15)] max-w-md w-full p-8 rounded-sm">
           <div className="text-center mb-6">
-            <Mail className="w-12 h-12 text-orange-500 mx-auto mb-3 animate-bounce" />
-            <h2 className="text-xl font-black text-white uppercase tracking-wider">Office Mail Verification</h2>
-            <p className="text-xs text-zinc-400 mt-2">
-              Logged in via Gmail (<span className="text-orange-400">{user.email}</span>). Please enter your official corporate office mail to continue.
+            <Mail className="w-12 h-12 text-orange-600 mx-auto mb-3 animate-bounce" />
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">Office Mail Verification</h2>
+            <p className="text-xs text-slate-600 mt-2">
+              Authenticated via Google (<span className="text-orange-600 font-bold">{user.email}</span>). Please enter your official corporate office mail to continue.
             </p>
           </div>
 
           <form onSubmit={handleOfficeMailSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs text-orange-400 font-bold uppercase mb-1">Office Email Address</label>
+              <label className="block text-xs text-orange-600 font-bold uppercase mb-1">Office Email Address</label>
               <input 
                 type="email" 
                 required 
                 value={officeMailInput} 
                 onChange={(e) => setOfficeMailInput(e.target.value)} 
                 placeholder="name@mitesp.com" 
-                className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-3 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-4 py-3 text-sm focus:outline-none focus:border-orange-500 rounded-sm"
               />
-              <span className="text-[10px] text-zinc-500 mt-1 block">Must end with @mitesp.com or @millenniumitesp.com</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">Must end with @mitesp.com or @millenniumitesp.com</span>
             </div>
 
-            <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 transition-all uppercase tracking-widest text-xs border border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+            <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 transition-all uppercase tracking-widest text-xs border border-orange-500 shadow-[0_4px_12px_rgba(249,115,22,0.3)]">
               Verify & Proceed to Shipyard
             </button>
           </form>
 
-          <div className="mt-6 text-center border-t border-zinc-800 pt-4">
-            <button onClick={() => { localStorage.clear(); signOut(auth); }} className="text-xs text-zinc-500 hover:text-red-400 underline uppercase tracking-wider">
+          <div className="mt-6 text-center border-t border-slate-200 pt-4">
+            <button onClick={() => { localStorage.clear(); signOut(auth); }} className="text-xs text-slate-500 hover:text-red-600 underline uppercase tracking-wider">
               Sign out & use a different account
             </button>
           </div>
@@ -285,64 +283,66 @@ export default function SOCDashboard() {
     );
   }
 
+  const officeNameOnly = verifiedOfficeMail ? verifiedOfficeMail.split('@')[0].toUpperCase() : 'ENGINEER';
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-mono flex flex-col selection:bg-orange-950">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-mono flex flex-col selection:bg-orange-100 selection:text-orange-900">
       
-      {/* LIVE INTELLIGENCE TICKER */}
-      <div className="bg-orange-950/90 border-b border-orange-500/60 text-orange-300 py-1.5 overflow-hidden whitespace-nowrap relative flex items-center">
-        <div className="animate-[marquee_20s_linear_infinite] inline-block font-bold tracking-widest text-sm w-full">
+      {/* LIVE INTELLIGENCE TICKER (Slower 40s Speed) */}
+      <div className="bg-orange-600 border-b border-orange-700 text-white py-2 overflow-hidden whitespace-nowrap relative flex items-center shadow-sm">
+        <div className="animate-[marquee_40s_linear_infinite] inline-block font-bold tracking-widest text-xs w-full">
           🔥 MITESP SHIPYARD INTEL: TARGET JUMBO HOTFIX DEPLOYMENT REQUIRED 
-          <span className="text-white mx-4">|</span> R81.20: TARGET TAKE {data?.targets?.["R81.20"] || '170'} 
-          <span className="text-white mx-4">|</span> R82: TARGET TAKE {data?.targets?.["R82"] || '127'} 
-          <span className="text-white mx-4">|</span> ALL CLUSTERS SECURED 🔥
+          <span className="text-orange-200 mx-4">|</span> R81.20: TARGET TAKE {data?.targets?.["R81.20"] || '170'} 
+          <span className="text-orange-200 mx-4">|</span> R82: TARGET TAKE {data?.targets?.["R82"] || '127'} 
+          <span className="text-orange-200 mx-4">|</span> ALL CLUSTERS SECURED 🔥
         </div>
       </div>
 
       {/* NAVBAR */}
-      <nav className="border-b border-zinc-800 bg-zinc-900/90 px-6 py-3 flex justify-between items-center backdrop-blur-md sticky top-0 z-20 shadow-lg">
+      <nav className="border-b border-slate-200 bg-white px-6 py-3 flex justify-between items-center backdrop-blur-md sticky top-0 z-20 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="bg-white px-3 py-1.5 rounded flex items-center shadow-sm">
+          <div className="bg-slate-50 px-3 py-1.5 rounded border border-slate-200 flex items-center shadow-sm">
             <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-8 w-auto object-contain" />
           </div>
-          <div className="border-l border-zinc-700 pl-4">
-            <h1 className="text-base font-black text-white tracking-widest leading-none">CHECK POINT SHIPYARD</h1>
-            <span className="text-[11px] text-orange-400 tracking-[0.2em] font-bold">ENTERPRISE SECURITY MATRIX</span>
+          <div className="border-l border-slate-200 pl-4">
+            <h1 className="text-base font-black text-slate-900 tracking-widest leading-none">CHECK POINT SHIPYARD</h1>
+            <span className="text-[11px] text-orange-600 tracking-[0.2em] font-bold">ENTERPRISE SECURITY MATRIX</span>
           </div>
         </div>
         
         <div className="flex items-center gap-6">
           <button 
             onClick={() => setShowLogModal(true)}
-            className="flex items-center gap-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-2 border border-zinc-700 uppercase tracking-widest transition-colors"
+            className="flex items-center gap-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 border border-slate-300 uppercase tracking-widest transition-colors font-bold rounded-sm shadow-sm"
           >
-            <History className="w-4 h-4 text-orange-400" />
+            <History className="w-4 h-4 text-orange-600" />
             Audit Logs ({data?.logs?.length || 0})
           </button>
 
           <div className="flex flex-col items-end">
-            <button onClick={handleForceSync} disabled={isUpdating} className="flex items-center gap-2 text-xs bg-orange-950 hover:bg-orange-900 text-orange-400 px-4 py-1.5 border border-orange-500/40 uppercase tracking-widest transition-colors disabled:opacity-50">
+            <button onClick={handleForceSync} disabled={isUpdating} className="flex items-center gap-2 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-4 py-1.5 border border-orange-300 uppercase tracking-widest transition-colors disabled:opacity-50 font-bold rounded-sm">
               <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
               {isUpdating ? 'Syncing...' : 'Force CP Sync'}
             </button>
-            <span className="text-[10px] text-zinc-400 mt-1 mr-1">
+            <span className="text-[10px] text-slate-400 mt-1 mr-1">
               Last Scrape: {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'Unknown'}
             </span>
           </div>
 
-          <div className="text-right hidden md:block pl-6 border-l border-zinc-800">
-            <div className="text-sm font-bold text-orange-400 uppercase">{verifiedOfficeMail}</div>
-            <div className="text-xs text-zinc-400 font-semibold tracking-wider">Cyber Security Engineer <span className="text-[10px] text-zinc-500">(Gmail: {user?.email})</span></div>
+          <div className="text-right hidden md:block pl-6 border-l border-slate-200">
+            <div className="text-sm font-black text-orange-600 uppercase tracking-wider">{officeNameOnly}</div>
+            <div className="text-xs text-slate-500 font-bold tracking-wider">Cyber Security Engineer</div>
           </div>
-          <button onClick={() => { localStorage.clear(); signOut(auth); }} className="text-zinc-400 hover:text-orange-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
+          <button onClick={() => { localStorage.clear(); signOut(auth); }} className="text-slate-400 hover:text-orange-600 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
         </div>
       </nav>
 
       {/* DASHBOARD CONTENT */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
         
-        <div className="flex justify-between items-end mb-8 border-b border-zinc-800 pb-4 mt-4">
-          <h2 className="text-2xl text-white font-bold uppercase tracking-wider">Client Perimeters</h2>
-          <button onClick={handleAddClient} className="bg-zinc-900 hover:bg-zinc-800 text-orange-400 border border-orange-500/40 px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors shadow-[0_0_10px_rgba(249,115,22,0.15)] hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+        <div className="flex justify-between items-end mb-8 border-b border-slate-200 pb-4 mt-4">
+          <h2 className="text-2xl text-slate-900 font-black uppercase tracking-wider">Client Perimeters</h2>
+          <button onClick={handleAddClient} className="bg-white hover:bg-orange-50 text-orange-600 border border-orange-500/50 px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors shadow-sm rounded-sm">
             + Add Client Perimeter
           </button>
         </div>
@@ -350,13 +350,13 @@ export default function SOCDashboard() {
         <div className="space-y-4">
           {Array.isArray(data?.customers) && data.customers.length > 0 ? (
             data.customers.map((customer: any) => (
-              <div key={customer.id || Math.random()} className="bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
+              <div key={customer.id || Math.random()} className="bg-white border border-slate-200 rounded-sm overflow-hidden transition-all duration-300 shadow-sm">
                 
-                <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-zinc-800/80 transition-colors group">
+                <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
                   <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => setExpanded(expanded === customer.id ? null : customer.id)}>
-                    <Server className="text-orange-500 w-6 h-6" />
-                    <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
-                    <span className="bg-zinc-800 text-orange-300 text-xs px-2 py-1 rounded-sm border border-zinc-700">
+                    <Server className="text-orange-600 w-6 h-6" />
+                    <span className="text-xl font-black text-slate-900 uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
+                    <span className="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-sm border border-slate-200 font-bold">
                       {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Clusters
                     </span>
                   </div>
@@ -364,42 +364,42 @@ export default function SOCDashboard() {
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', model: 'Quantum 9200', clusterType: 'Cluster', status: '', note: '' } })}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-zinc-800 hover:bg-orange-950 text-orange-400 px-3 py-1 border border-orange-500/40 flex items-center gap-1 font-bold"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-1 border border-orange-300 flex items-center gap-1 font-bold rounded-sm"
                     >
                       <Plus className="w-3 h-3" /> Add Cluster
                     </button>
                     <button 
                       onClick={(e) => handleDeleteClient(customer.id, customer.name, e)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-red-950/60 hover:bg-red-900 text-red-400 px-2.5 py-1 border border-red-500/30 flex items-center gap-1 font-bold rounded-sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 border border-red-300 flex items-center gap-1 font-bold rounded-sm"
                       title="Delete Client Perimeter"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
-                    <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
                   </div>
                 </div>
 
-                <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-zinc-800' : 'grid-rows-[0fr] opacity-0'}`}>
+                <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-slate-200' : 'grid-rows-[0fr] opacity-0'}`}>
                   <div className="overflow-hidden">
-                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-zinc-950/60 shadow-inner">
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-slate-50/50 shadow-inner">
                       {Array.isArray(customer?.clusters) && customer.clusters.length > 0 ? (
                         customer.clusters.map((cluster: any) => {
                           const statusStyles = getStatusColor(cluster.version, cluster.hotfix);
                           
                           return (
-                            <div key={cluster.id || Math.random()} className={`p-4 bg-zinc-900 border-l-4 ${statusStyles} flex flex-col gap-3 relative group transition-all duration-300 hover:bg-zinc-800/80 shadow-md`}>
+                            <div key={cluster.id || Math.random()} className={`p-4 bg-white border border-slate-200 border-l-4 ${statusStyles} flex flex-col gap-3 relative group transition-all duration-300 hover:shadow-md rounded-sm`}>
                               
                               <div className="flex justify-between items-start">
-                                <h3 className="font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                <h3 className="font-black text-slate-900 tracking-widest uppercase flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-orange-600"></span>
                                   {cluster.name || 'Unnamed Cluster'}
-                                  <span className="text-[10px] bg-orange-950/80 text-orange-300 px-2 py-0.5 rounded border border-orange-500/30 normal-case font-normal">
+                                  <span className="text-[10px] bg-orange-50 text-orange-700 px-2 py-0.5 rounded border border-orange-200 normal-case font-bold">
                                     {cluster.clusterType || 'Cluster'}
                                   </span>
                                 </h3>
                                 <button 
                                   onClick={() => setEditModal({ customerId: customer.id, cluster })}
-                                  className="text-xs bg-zinc-800 hover:bg-orange-950 text-orange-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-orange-500/30 rounded-sm font-bold"
+                                  className="text-xs bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-700 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-slate-300 rounded-sm font-bold"
                                 >
                                   EDIT CLUSTER
                                 </button>
@@ -407,33 +407,33 @@ export default function SOCDashboard() {
 
                               <div className="grid grid-cols-3 gap-2 text-sm mt-1">
                                 <div>
-                                  <div className="text-zinc-400 text-[10px] uppercase mb-1 tracking-wider font-semibold">Version</div>
-                                  <div className="font-bold text-white text-xs">{cluster.version || 'Unknown'}</div>
+                                  <div className="text-slate-400 text-[10px] uppercase mb-1 tracking-wider font-bold">Version</div>
+                                  <div className="font-bold text-slate-800 text-xs">{cluster.version || 'Unknown'}</div>
                                 </div>
                                 <div>
-                                  <div className="text-zinc-400 text-[10px] uppercase mb-1 tracking-wider font-semibold">Model</div>
-                                  <div className="font-bold text-orange-400 text-xs flex items-center gap-1">
+                                  <div className="text-slate-400 text-[10px] uppercase mb-1 tracking-wider font-bold">Model</div>
+                                  <div className="font-bold text-orange-600 text-xs flex items-center gap-1">
                                     <Cpu className="w-3 h-3" /> {cluster.model || 'Quantum 9200'}
                                   </div>
                                 </div>
                                 <div>
-                                  <div className="text-zinc-400 text-[10px] uppercase mb-1 tracking-wider font-semibold">JHF Level</div>
+                                  <div className="text-slate-400 text-[10px] uppercase mb-1 tracking-wider font-bold">JHF Level</div>
                                   <div className={`font-black text-xs ${statusStyles.split(' ')[2]}`}>
                                     {String(cluster.hotfix || 'Unknown')}
                                   </div>
                                 </div>
                               </div>
                               
-                              <div className="mt-2 bg-zinc-950 p-2.5 text-xs text-zinc-300 border border-zinc-800 font-sans italic rounded-sm leading-relaxed">
-                                <span className="text-orange-400 font-bold uppercase not-italic mr-1 text-[10px]">Status:</span> 
+                              <div className="mt-2 bg-slate-100 p-2.5 text-xs text-slate-700 border border-slate-200 font-sans italic rounded-sm leading-relaxed">
+                                <span className="text-orange-600 font-bold uppercase not-italic mr-1 text-[10px]">Status:</span> 
                                 {cluster.status || 'No status provided.'}
                               </div>
 
                               {cluster.note && (
-                                <div className="mt-1 bg-orange-950/30 p-2.5 text-xs text-orange-200 border border-orange-500/30 font-sans rounded-sm flex items-start gap-2">
-                                  <FileText className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                                <div className="mt-1 bg-orange-50 p-2.5 text-xs text-orange-900 border border-orange-200 font-sans rounded-sm flex items-start gap-2">
+                                  <FileText className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
                                   <div>
-                                    <span className="font-bold uppercase tracking-wider text-[10px] block text-orange-400">Special Note:</span>
+                                    <span className="font-bold uppercase tracking-wider text-[10px] block text-orange-700">Special Note:</span>
                                     {cluster.note}
                                   </div>
                                 </div>
@@ -442,7 +442,7 @@ export default function SOCDashboard() {
                           )
                         })
                       ) : (
-                        <div className="text-zinc-500 italic text-sm py-4 w-full col-span-full text-center">
+                        <div className="text-slate-400 italic text-sm py-4 w-full col-span-full text-center">
                           No clusters configured for this client perimeter. Click "+ Add Cluster" to deploy.
                         </div>
                       )}
@@ -452,45 +452,46 @@ export default function SOCDashboard() {
               </div>
             ))
           ) : (
-             <div className="text-zinc-500 italic p-6 bg-zinc-900 border border-zinc-800 rounded-sm text-center">
+             <div className="text-slate-400 italic p-6 bg-white border border-slate-200 rounded-sm text-center">
                No client perimeters found in database.
              </div>
           )}
         </div>
       </main>
 
-      {/* AUDIT LOG MODAL */}
+      {/* AUDIT LOG MODAL (Includes IP Address Tracking) */}
       {showLogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4">
-          <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white border border-orange-500/40 shadow-[0_10px_40px_rgba(0,0,0,0.15)] w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh] rounded-sm">
+            <div className="bg-slate-100 px-6 py-4 flex justify-between items-center border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-orange-400" />
-                <h3 className="font-extrabold text-white tracking-widest uppercase text-orange-400 text-sm">
-                  System Audit Trail & Activity Log (Dual-Email Tracked)
+                <History className="w-5 h-5 text-orange-600" />
+                <h3 className="font-black text-slate-900 tracking-widest uppercase text-xs">
+                  System Audit Trail & Activity Log (IP Tracked)
                 </h3>
               </div>
-              <button onClick={() => setShowLogModal(false)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowLogModal(false)} className="text-slate-400 hover:text-slate-700 transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-3 font-mono flex-1">
+            <div className="p-6 overflow-y-auto space-y-3 font-mono flex-1 bg-slate-50">
               {Array.isArray(data.logs) && data.logs.length > 0 ? (
                 data.logs.map((log: any) => (
-                  <div key={log.id} className="bg-zinc-950 p-3 border border-zinc-800 rounded text-xs space-y-1">
-                    <div className="flex justify-between items-center text-zinc-400">
-                      <span className="text-orange-400 font-bold">{log.userName || 'Engineer'} <span className="text-zinc-500 font-normal">({log.userEmail})</span></span>
-                      <span>{new Date(log.timestamp).toLocaleString()}</span>
+                  <div key={log.id} className="bg-white p-3.5 border border-slate-200 rounded-sm text-xs space-y-1.5 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-500">
+                      <span className="text-orange-600 font-black">{log.userName || 'Engineer'} <span className="text-slate-400 font-normal">({log.userEmail})</span></span>
+                      <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] border border-slate-200 text-slate-600 font-bold">IP: {log.ipAddress || '127.0.0.1'}</span>
                     </div>
-                    <div className="text-zinc-200 font-semibold">{log.description}</div>
+                    <div className="text-slate-900 font-bold">{log.description}</div>
+                    <div className="text-[10px] text-slate-400 text-right">{new Date(log.timestamp).toLocaleString()}</div>
                   </div>
                 ))
               ) : (
-                <div className="text-zinc-500 text-center py-8 italic">No audit log history recorded yet.</div>
+                <div className="text-slate-400 text-center py-8 italic">No audit log history recorded yet.</div>
               )}
             </div>
 
-            <div className="bg-zinc-950 px-6 py-3 border-t border-zinc-800 flex justify-end">
-              <button onClick={() => setShowLogModal(false)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 text-xs uppercase font-bold tracking-wider">
+            <div className="bg-slate-100 px-6 py-3 border-t border-slate-200 flex justify-end">
+              <button onClick={() => setShowLogModal(false)} className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 text-xs uppercase font-bold tracking-wider rounded-sm">
                 Close Log
               </button>
             </div>
@@ -500,32 +501,32 @@ export default function SOCDashboard() {
 
       {/* EDIT CLUSTER MODAL */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4">
-          <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-lg overflow-hidden">
-            <div className="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700">
-              <h3 className="font-extrabold text-white tracking-widest uppercase text-orange-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white border border-orange-500/50 shadow-[0_10px_40px_rgba(0,0,0,0.15)] w-full max-w-lg overflow-hidden rounded-sm">
+            <div className="bg-slate-100 px-6 py-4 flex justify-between items-center border-b border-slate-200">
+              <h3 className="font-black text-slate-900 tracking-widest uppercase text-xs">
                 {editModal.cluster.id ? 'Edit Cluster' : 'Deploy New Cluster'}
               </h3>
-              <button onClick={() => setEditModal(null)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setEditModal(null)} className="text-slate-400 hover:text-slate-700 transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
             <form onSubmit={handleSaveCluster} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Cluster Name</label>
-                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors" placeholder="e.g. Production Cluster" />
+                <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Cluster Name</label>
+                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors rounded-sm text-sm" placeholder="e.g. Production Cluster" />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Deployment Type</label>
-                  <select name="clusterType" defaultValue={editModal.cluster.clusterType || "Cluster"} className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm">
+                  <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Deployment Type</label>
+                  <select name="clusterType" defaultValue={editModal.cluster.clusterType || "Cluster"} className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm">
                     <option value="Cluster">Cluster (HA)</option>
                     <option value="Single GW">1 GW (Single)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Version</label>
-                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm">
+                  <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Version</label>
+                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm">
                     <option value="R81.20">R81.20</option>
                     <option value="R82">R82</option>
                   </select>
@@ -534,34 +535,34 @@ export default function SOCDashboard() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Device Model</label>
-                  <input name="model" defaultValue={editModal.cluster.model || "Quantum 9200"} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm" placeholder="e.g. Quantum 9200" />
+                  <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Device Model</label>
+                  <input name="model" defaultValue={editModal.cluster.model || "Quantum 9200"} required className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm" placeholder="e.g. Quantum 9200" />
                 </div>
                 <div>
-                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">JHF Level</label>
-                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm" placeholder="e.g. Take 141" />
+                  <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">JHF Level</label>
+                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm" placeholder="e.g. Take 141" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Implementation Status</label>
-                <textarea name="status" defaultValue={editModal.cluster.status} required rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none text-sm" placeholder="e.g. Upgraded successfully" />
+                <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Implementation Status</label>
+                <textarea name="status" defaultValue={editModal.cluster.status} required rows={2} className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-4 py-2 focus:outline-none focus:border-orange-500 resize-none text-sm rounded-sm" placeholder="e.g. Upgraded successfully" />
               </div>
 
               <div>
-                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Special Note</label>
-                <textarea name="note" defaultValue={editModal.cluster.note} rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none text-sm" placeholder="e.g. Requires maintenance window approval from client ISO." />
+                <label className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Special Note</label>
+                <textarea name="note" defaultValue={editModal.cluster.note} rows={2} className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-4 py-2 focus:outline-none focus:border-orange-500 resize-none text-sm rounded-sm" placeholder="e.g. Requires maintenance window approval from client ISO." />
               </div>
 
-              <div className="pt-4 flex justify-between items-center border-t border-zinc-800 mt-6">
+              <div className="pt-4 flex justify-between items-center border-t border-slate-200 mt-6">
                 {editModal.cluster.id ? (
-                  <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest px-4 py-2 border border-red-500/30 hover:bg-red-950/30 transition-colors font-bold">
+                  <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-600 hover:text-red-700 uppercase tracking-widest px-4 py-2 border border-red-300 hover:bg-red-50 transition-colors font-bold rounded-sm">
                     Delete Cluster
                   </button>
                 ) : <div></div>}
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setEditModal(null)} className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
-                  <button type="submit" className="text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+                  <button type="button" onClick={() => setEditModal(null)} className="text-xs text-slate-500 hover:text-slate-800 uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
+                  <button type="submit" className="text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_4px_12px_rgba(249,115,22,0.3)] rounded-sm">
                     Save Cluster
                   </button>
                 </div>
@@ -571,6 +572,7 @@ export default function SOCDashboard() {
         </div>
       )}
 
+      {/* Slower Ticker Keyframes (40 seconds) */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
       `}} />
