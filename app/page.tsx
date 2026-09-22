@@ -21,9 +21,13 @@ export default function SOCDashboard() {
     return () => unsub();
   }, []);
 
-  const login = async () => {
-    try { await signInWithPopup(auth, googleProvider); } 
-    catch (e) { alert("Configure Firebase in lib/firebase.ts!"); }
+const login = async () => {
+    try { 
+      await signInWithPopup(auth, googleProvider); 
+    } catch (e: any) { 
+      console.error("Firebase Auth Error:", e);
+      alert(`Firebase Error: ${e.message}`); 
+    }
   };
 
   // Helper to determine if a firewall is outdated based on the global target

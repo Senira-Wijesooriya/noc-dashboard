@@ -2,12 +2,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  apiKey: "AIzaSyCQygI0I-yyoiooquotLa7cyj6--nCQOK4",
+  authDomain: "noc-dashboard-80cc3.firebaseapp.com",
+  projectId: "noc-dashboard-80cc3",
+  storageBucket: "noc-dashboard-80cc3.firebasestorage.app",
+  messagingSenderId: "715842092599",
+  appId: "1:715842092599:web:8bf737c0d030bdf01b89b2",
+  measurementId: "G-NXP6EJC8PY"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
