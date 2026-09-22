@@ -11,20 +11,21 @@ export default function SOCDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Bulletproof fetch function
   const loadData = async () => {
     try {
       const res = await fetch("/api/dashboard");
       const json = await res.json();
       
-      // Safety Check: Only update state if the API actually returned our expected data format
-      if (json && json.targets && json.customers) {
-        setData(json);
-      } else {
-        console.error("API returned an error instead of data:", json);
+      // Ensure the incoming data is structured safely before applying it
+      if (json && typeof json === 'object') {
+        setData({
+          targets: json.targets || { "R81.20": "170", "R82": "127" },
+          customers: Array.isArray(json.customers) ? json.customers : [],
+          lastUpdated: json.lastUpdated || 0
+        });
       }
     } catch (e) {
-      console.error("Failed to fetch data. Database might not be linked.", e);
+      console.error("Failed to fetch data.", e);
     }
   };
 
@@ -57,22 +58,24 @@ export default function SOCDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "force_sync" })
       });
-      if (res.ok) {
-        await loadData();
-      } else {
-        alert("Scraping failed. Database may not be connected.");
-      }
+      if (res.ok) await loadData();
     } catch (e) {
       console.error(e);
     }
     setIsUpdating(false);
   };
 
-  const getStatusColor = (version: string, currentTake: string) => {
-    const targetTakeStr = data?.targets?.[version];
-    if (!targetTakeStr || !currentTake) return "border-gray-600 text-gray-400";
+  // Bulletproofed color status logic
+  const getStatusColor = (version: string, currentTake: any) => {
+    // Force inputs into strings to prevent .replace() crashes if numbers are passed
+    const targetTakeStr = String(data?.targets?.[version] || '');
+    const currentTakeStr = String(currentTake || '');
+
+    if (!targetTakeStr || !currentTakeStr || currentTakeStr === 'undefined') {
+      return "border-gray-600 text-gray-400"; 
+    }
     
-    const current = parseInt(currentTake.replace(/\D/g, '')) || 0;
+    const current = parseInt(currentTakeStr.replace(/\D/g, '')) || 0;
     const target = parseInt(targetTakeStr.replace(/\D/g, '')) || 0;
 
     if (current >= target) return "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] text-emerald-400";
@@ -157,70 +160,76 @@ export default function SOCDashboard() {
         </div>
 
         <div className="space-y-4">
-          {data?.customers?.map((customer: any) => (
-            <div key={customer.id} className="bg-slate-900 border border-slate-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
-              
-              <button 
-                onClick={() => setExpanded(expanded === customer.id ? null : customer.id)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/80 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <Server className="text-cyan-600 w-6 h-6" />
-                  <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name}</span>
-                  <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded-sm border border-slate-700">
-                    {customer?.clusters?.length || 0} Clusters
-                  </span>
-                </div>
-                <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${expanded === customer.id ? 'rotate-180' : ''}`} />
-              </button>
+          {Array.isArray(data?.customers) && data.customers.length > 0 ? (
+            data.customers.map((customer: any) => (
+              <div key={customer.id || Math.random()} className="bg-slate-900 border border-slate-800 rounded-sm overflow-hidden transition-all duration-300 shadow-md">
+                
+                <button 
+                  onClick={() => setExpanded(expanded === customer.id ? null : customer.id)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/80 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <Server className="text-cyan-600 w-6 h-6" />
+                    <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
+                    <span className="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded-sm border border-slate-700">
+                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Clusters
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${expanded === customer.id ? 'rotate-180' : ''}`} />
+                </button>
 
-              <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-slate-800' : 'grid-rows-[0fr] opacity-0'}`}>
-                <div className="overflow-hidden">
-                  <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-slate-900/40 shadow-inner">
-                    {customer?.clusters?.map((cluster: any) => {
-                      const statusStyles = getStatusColor(cluster.version, cluster.hotfix);
-                      
-                      return (
-                        <div key={cluster.id} className={`p-4 bg-slate-950 border-l-4 ${statusStyles} flex flex-col gap-3 relative group transition-all duration-300 hover:bg-slate-900`}>
+                <div className={`grid transition-all duration-300 ease-in-out ${expanded === customer.id ? 'grid-rows-[1fr] opacity-100 border-t border-slate-800' : 'grid-rows-[0fr] opacity-0'}`}>
+                  <div className="overflow-hidden">
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 bg-slate-900/40 shadow-inner">
+                      {Array.isArray(customer?.clusters) && customer.clusters.length > 0 ? (
+                        customer.clusters.map((cluster: any) => {
+                          const statusStyles = getStatusColor(cluster.version, cluster.hotfix);
                           
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-bold text-white tracking-widest uppercase">{cluster.name}</h3>
-                            <button className="text-xs bg-slate-800 hover:bg-cyan-900 text-slate-400 hover:text-cyan-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-slate-700 rounded-sm">
-                              EDIT
-                            </button>
-                          </div>
+                          return (
+                            <div key={cluster.id || Math.random()} className={`p-4 bg-slate-950 border-l-4 ${statusStyles} flex flex-col gap-3 relative group transition-all duration-300 hover:bg-slate-900`}>
+                              
+                              <div className="flex justify-between items-start">
+                                <h3 className="font-bold text-white tracking-widest uppercase">{cluster.name || 'Unnamed Cluster'}</h3>
+                                <button className="text-xs bg-slate-800 hover:bg-cyan-900 text-slate-400 hover:text-cyan-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-slate-700 rounded-sm">
+                                  EDIT
+                                </button>
+                              </div>
 
-                          <div className="grid grid-cols-2 gap-4 text-sm mt-1">
-                            <div>
-                              <div className="text-slate-500 text-xs uppercase mb-1 tracking-wider">Version</div>
-                              <div className="font-bold text-slate-300">{cluster.version}</div>
-                            </div>
-                            <div>
-                              <div className="text-slate-500 text-xs uppercase mb-1 tracking-wider">JHF Level</div>
-                              <div className={`font-black ${statusStyles.split(' ')[2]}`}>
-                                {cluster.hotfix || 'Unknown'}
+                              <div className="grid grid-cols-2 gap-4 text-sm mt-1">
+                                <div>
+                                  <div className="text-slate-500 text-xs uppercase mb-1 tracking-wider">Version</div>
+                                  <div className="font-bold text-slate-300">{cluster.version || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-500 text-xs uppercase mb-1 tracking-wider">JHF Level</div>
+                                  <div className={`font-black ${statusStyles.split(' ')[2]}`}>
+                                    {String(cluster.hotfix || 'Unknown')}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="mt-3 bg-slate-900/80 p-2.5 text-xs text-slate-400 border border-slate-800 font-sans italic rounded-sm leading-relaxed">
+                                <span className="text-slate-500 font-bold uppercase not-italic mr-1 text-[10px]">Status:</span> 
+                                {cluster.status || 'No status provided.'}
                               </div>
                             </div>
-                          </div>
-                          
-                          <div className="mt-3 bg-slate-900/80 p-2.5 text-xs text-slate-400 border border-slate-800 font-sans italic rounded-sm leading-relaxed">
-                            <span className="text-slate-500 font-bold uppercase not-italic mr-1 text-[10px]">Status:</span> 
-                            {cluster.status}
-                          </div>
+                          )
+                        })
+                      ) : (
+                        <div className="text-slate-500 italic text-sm py-4 w-full col-span-full text-center">
+                          No security clusters deployed or mapped to this perimeter.
                         </div>
-                      )
-                    })}
-                    {(!customer.clusters || customer.clusters.length === 0) && (
-                      <div className="text-slate-500 italic text-sm py-4 w-full col-span-full text-center">
-                        No security clusters deployed or mapped to this perimeter.
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-
-            </div>
-          ))}
+            ))
+          ) : (
+             <div className="text-slate-500 italic p-6 bg-slate-900 border border-slate-800 rounded-sm text-center">
+               No customer environments found in the database.
+             </div>
+          )}
         </div>
       </main>
 
