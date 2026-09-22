@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History } from "lucide-react";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2, History, Lock, Mail } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -11,6 +11,11 @@ export default function SOCDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
+  // Auth Form State
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+
   // Modals
   const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
   const [showLogModal, setShowLogModal] = useState(false);
@@ -36,10 +41,9 @@ export default function SOCDashboard() {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
         const email = u.email || '';
-        // ENFORCE DOMAIN RESTRICTION
         if (!email.endsWith('@mitesp.com') && !email.endsWith('@millenniumitesp.com')) {
           await signOut(auth);
-          alert(`Access Denied (${email}): Only @mitesp.com or @millenniumitesp.com accounts are authorized to access this secure ship environment.`);
+          alert(`Access Denied (${email}): Only authorized corporate accounts are allowed.`);
           setUser(null);
           setLoading(false);
           return;
@@ -56,11 +60,21 @@ export default function SOCDashboard() {
     return () => unsub();
   }, []);
 
-  const login = async () => {
-    try { 
-      await signInWithPopup(auth, googleProvider); 
-    } catch (e: any) { 
-      alert(`Firebase Error: ${e.message}`); 
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.endsWith('@mitesp.com') && !emailInput.endsWith('@millenniumitesp.com')) {
+      alert("Access Denied: Only @mitesp.com or @millenniumitesp.com corporate accounts are authorized.");
+      return;
+    }
+    try {
+      if (isRegistering) {
+        await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
+        alert("Account created successfully! You are now logged in.");
+      } else {
+        await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+      }
+    } catch (err: any) {
+      alert(`Authentication Error: ${err.message}`);
     }
   };
 
@@ -73,7 +87,7 @@ export default function SOCDashboard() {
         body: JSON.stringify({ 
           action: "force_sync",
           userEmail: user?.email,
-          userName: user?.displayName
+          userName: user?.displayName || user?.email?.split('@')[0]
         })
       });
       if (res.ok) await loadData();
@@ -91,7 +105,7 @@ export default function SOCDashboard() {
         customers: updatedCustomers,
         logDescription: logDesc,
         userEmail: user?.email,
-        userName: user?.displayName
+        userName: user?.displayName || user?.email?.split('@')[0]
       })
     });
     if (res.ok) {
@@ -190,14 +204,57 @@ export default function SOCDashboard() {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a2e_1px,transparent_1px),linear-gradient(to_bottom,#27272a2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-        <div className="z-10 bg-zinc-900 border border-orange-500/40 p-12 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
-          <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-white/5 p-2 rounded" />
+        <div className="z-10 bg-zinc-900 border border-orange-500/40 p-10 shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center max-w-md w-full">
+          <img src="/MillenniumIT_ESP.png" alt="MillenniumIT ESP" className="h-16 w-auto mx-auto mb-6 bg-white/5 p-2 rounded object-contain" />
           <h1 className="text-2xl font-black tracking-widest text-white mb-1 uppercase">Check Point Shipyard</h1>
           <p className="text-orange-400 text-xs mb-2 tracking-widest uppercase">Fleet Command Center</p>
-          <p className="text-zinc-500 text-[11px] mb-8 font-sans">Authorized personnel only (@mitesp.com / @millenniumitesp.com)</p>
-          <button onClick={login} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 transition-all uppercase tracking-widest border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-            Authenticate via Identity Provider
-          </button>
+          <p className="text-zinc-500 text-[11px] mb-6 font-sans">Enter your work email (@mitesp.com / @millenniumitesp.com)</p>
+          
+          <form onSubmit={handleAuthSubmit} className="space-y-4 text-left font-mono">
+            <div>
+              <label className="block text-xs text-orange-400 font-bold uppercase mb-1">Corporate Email</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+                <input 
+                  type="email" 
+                  required 
+                  value={emailInput} 
+                  onChange={(e) => setEmailInput(e.target.value)} 
+                  placeholder="name@mitesp.com" 
+                  className="w-full bg-zinc-950 border border-zinc-700 text-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-orange-400 font-bold uppercase mb-1">Password</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+                <input 
+                  type="password" 
+                  required 
+                  value={passwordInput} 
+                  onChange={(e) => setPasswordInput(e.target.value)} 
+                  placeholder="••••••••" 
+                  className="w-full bg-zinc-950 border border-zinc-700 text-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 transition-all uppercase tracking-widest border border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] text-xs mt-2">
+              {isRegistering ? 'Register Corporate Account' : 'Secure Login'}
+            </button>
+
+            <div className="text-center pt-2">
+              <button 
+                type="button" 
+                onClick={() => setIsRegistering(!isRegistering)} 
+                className="text-xs text-zinc-400 hover:text-orange-400 underline transition-colors"
+              >
+                {isRegistering ? 'Already have an account? Sign in' : 'First time? Create your password here'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -248,7 +305,7 @@ export default function SOCDashboard() {
           </div>
 
           <div className="text-right hidden md:block pl-6 border-l border-zinc-800">
-            <div className="text-sm font-bold text-white uppercase">{user?.displayName || 'Engineer'}</div>
+            <div className="text-sm font-bold text-white uppercase">{user?.displayName || user?.email?.split('@')[0]}</div>
             <div className="text-xs text-orange-400 font-bold tracking-wider">Cyber Security Engineer</div>
           </div>
           <button onClick={() => signOut(auth)} className="text-zinc-400 hover:text-orange-400 transition-colors" title="Log Out"><LogOut className="w-5 h-5" /></button>
