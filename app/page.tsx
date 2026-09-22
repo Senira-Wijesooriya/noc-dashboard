@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu } from "lucide-react";
+import { ShieldAlert, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu, Trash2 } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -82,6 +82,14 @@ export default function SOCDashboard() {
     saveCustomersToDB([...data.customers, newCustomer]);
   };
 
+  const handleDeleteClient = (customerId: string, customerName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete client perimeter "${customerName}" and all its clusters?`)) return;
+
+    const updatedCustomers = data.customers.filter((c: any) => c.id !== customerId);
+    saveCustomersToDB(updatedCustomers);
+  };
+
   const handleSaveCluster = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editModal) return;
@@ -93,6 +101,7 @@ export default function SOCDashboard() {
       version: formData.get("version"),
       hotfix: formData.get("hotfix"),
       model: formData.get("model"),
+      clusterType: formData.get("clusterType"), // Cluster vs Single GW
       status: formData.get("status"),
       note: formData.get("note"),
     };
@@ -226,12 +235,19 @@ export default function SOCDashboard() {
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <button 
-                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', model: 'Quantum 9200', status: '', note: '' } })}
+                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', model: 'Quantum 9200', clusterType: 'Cluster', status: '', note: '' } })}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-zinc-800 hover:bg-orange-950 text-orange-400 px-3 py-1 border border-orange-500/40 flex items-center gap-1 font-bold"
                     >
                       <Plus className="w-3 h-3" /> Add Cluster
+                    </button>
+                    <button 
+                      onClick={(e) => handleDeleteClient(customer.id, customer.name, e)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-red-950/60 hover:bg-red-900 text-red-400 px-2.5 py-1 border border-red-500/30 flex items-center gap-1 font-bold rounded-sm"
+                      title="Delete Client Perimeter"
+                    >
+                      <Trash2 className="w-3 h-3" />
                     </button>
                     <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
                   </div>
@@ -251,6 +267,9 @@ export default function SOCDashboard() {
                                 <h3 className="font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
                                   <span className="w-2 h-2 rounded-full bg-orange-500"></span>
                                   {cluster.name || 'Unnamed Cluster'}
+                                  <span className="text-[10px] bg-orange-950/80 text-orange-300 px-2 py-0.5 rounded border border-orange-500/30 normal-case font-normal">
+                                    {cluster.clusterType || 'Cluster'}
+                                  </span>
                                 </h3>
                                 <button 
                                   onClick={() => setEditModal({ customerId: customer.id, cluster })}
@@ -331,7 +350,14 @@ export default function SOCDashboard() {
                 <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors" placeholder="e.g. Production Cluster" />
               </div>
               
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Deployment Type</label>
+                  <select name="clusterType" defaultValue={editModal.cluster.clusterType || "Cluster"} className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm">
+                    <option value="Cluster">Cluster (HA)</option>
+                    <option value="Single GW">1 GW (Single)</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Version</label>
                   <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm">
@@ -339,6 +365,9 @@ export default function SOCDashboard() {
                     <option value="R82">R82</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Device Model</label>
                   <input name="model" defaultValue={editModal.cluster.model || "Quantum 9200"} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm" placeholder="e.g. Quantum 9200" />
