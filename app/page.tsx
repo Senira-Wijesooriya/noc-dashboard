@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Server, LogOut, ChevronDown, RefreshCw, Plus, X, FileText, Cpu } from "lucide-react";
 
 export default function SOCDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -11,7 +11,7 @@ export default function SOCDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Modal State for GWs
+  // Modal State for Clusters
   const [editModal, setEditModal] = useState<{customerId: string, cluster: any} | null>(null);
 
   const loadData = async () => {
@@ -92,6 +92,7 @@ export default function SOCDashboard() {
       name: formData.get("name"),
       version: formData.get("version"),
       hotfix: formData.get("hotfix"),
+      model: formData.get("model"), // Device Model
       status: formData.get("status"),
       note: formData.get("note"), // Special Note
     };
@@ -113,7 +114,7 @@ export default function SOCDashboard() {
 
   const handleDeleteCluster = () => {
     if (!editModal || !editModal.cluster.id) return;
-    if (!confirm(`Are you sure you want to delete gateway ${editModal.cluster.name}?`)) return;
+    if (!confirm(`Are you sure you want to delete cluster ${editModal.cluster.name}?`)) return;
 
     const updatedCustomers = data.customers.map((c: any) => {
       if (c.id === editModal.customerId) {
@@ -166,7 +167,7 @@ export default function SOCDashboard() {
           🔥 MITESP SHIPYARD INTEL: TARGET JUMBO HOTFIX DEPLOYMENT REQUIRED 
           <span className="text-white mx-4">|</span> R81.20: TARGET TAKE {data?.targets?.["R81.20"] || '170'} 
           <span className="text-white mx-4">|</span> R82: TARGET TAKE {data?.targets?.["R82"] || '127'} 
-          <span className="text-white mx-4">|</span> ALL GWs SECURED 🔥
+          <span className="text-white mx-4">|</span> ALL CLUSTERS SECURED 🔥
         </div>
       </div>
 
@@ -219,16 +220,16 @@ export default function SOCDashboard() {
                     <Server className="text-orange-500 w-6 h-6" />
                     <span className="text-xl font-bold text-white uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
                     <span className="bg-zinc-800 text-orange-300 text-xs px-2 py-1 rounded-sm border border-zinc-700">
-                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} GWs
+                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Clusters
                     </span>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <button 
-                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: 'GW-', version: 'R81.20', hotfix: 'Take ', status: '', note: '' } })}
+                      onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', model: 'Quantum 9200', status: '', note: '' } })}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-zinc-800 hover:bg-orange-950 text-orange-400 px-3 py-1 border border-orange-500/40 flex items-center gap-1 font-bold"
                     >
-                      <Plus className="w-3 h-3" /> Add GW
+                      <Plus className="w-3 h-3" /> Add Cluster
                     </button>
                     <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-300 cursor-pointer ${expanded === customer.id ? 'rotate-180' : ''}`} onClick={() => setExpanded(expanded === customer.id ? null : customer.id)} />
                   </div>
@@ -247,24 +248,30 @@ export default function SOCDashboard() {
                               <div className="flex justify-between items-start">
                                 <h3 className="font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
                                   <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                                  {cluster.name || 'Unnamed GW'}
+                                  {cluster.name || 'Unnamed Cluster'}
                                 </h3>
                                 <button 
                                   onClick={() => setEditModal({ customerId: customer.id, cluster })}
                                   className="text-xs bg-zinc-800 hover:bg-orange-950 text-orange-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-orange-500/30 rounded-sm font-bold"
                                 >
-                                  EDIT GW
+                                  EDIT CLUSTER
                                 </button>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-4 text-sm mt-1">
+                              <div className="grid grid-cols-3 gap-2 text-sm mt-1">
                                 <div>
-                                  <div className="text-zinc-400 text-xs uppercase mb-1 tracking-wider font-semibold">Version</div>
-                                  <div className="font-bold text-white">{cluster.version || 'Unknown'}</div>
+                                  <div className="text-zinc-400 text-[10px] uppercase mb-1 tracking-wider font-semibold">Version</div>
+                                  <div className="font-bold text-white text-xs">{cluster.version || 'Unknown'}</div>
                                 </div>
                                 <div>
-                                  <div className="text-zinc-400 text-xs uppercase mb-1 tracking-wider font-semibold">JHF Level</div>
-                                  <div className={`font-black ${statusStyles.split(' ')[2]}`}>
+                                  <div className="text-zinc-400 text-[10px] uppercase mb-1 tracking-wider font-semibold">Model</div>
+                                  <div className="font-bold text-orange-400 text-xs flex items-center gap-1">
+                                    <Cpu className="w-3 h-3" /> {cluster.model || 'Quantum 9200'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-zinc-400 text-[10px] uppercase mb-1 tracking-wider font-semibold">JHF Level</div>
+                                  <div className={`font-black text-xs ${statusStyles.split(' ')[2]}`}>
                                     {String(cluster.hotfix || 'Unknown')}
                                   </div>
                                 </div>
@@ -289,7 +296,7 @@ export default function SOCDashboard() {
                         })
                       ) : (
                         <div className="text-zinc-500 italic text-sm py-4 w-full col-span-full text-center">
-                          No Gateways (GWs) configured for this client perimeter. Click "+ Add GW" to deploy.
+                          No clusters configured for this client perimeter. Click "+ Add Cluster" to deploy.
                         </div>
                       )}
                     </div>
@@ -305,57 +312,61 @@ export default function SOCDashboard() {
         </div>
       </main>
 
-      {/* EDIT GATEWAY MODAL */}
+      {/* EDIT CLUSTER MODAL */}
       {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4">
           <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-lg overflow-hidden">
             <div className="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700">
               <h3 className="font-extrabold text-white tracking-widest uppercase text-orange-400">
-                {editModal.cluster.id ? 'Edit Gateway (GW)' : 'Deploy New Gateway (GW)'}
+                {editModal.cluster.id ? 'Edit Cluster' : 'Deploy New Cluster'}
               </h3>
               <button onClick={() => setEditModal(null)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
             <form onSubmit={handleSaveCluster} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Gateway (GW) Name</label>
-                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors" placeholder="e.g. GW-DC-PRIMARY" />
+                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Cluster Name</label>
+                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors" placeholder="e.g. Production Cluster" />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Version</label>
-                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500">
+                  <select name="version" defaultValue={editModal.cluster.version} className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm">
                     <option value="R81.20">R81.20</option>
                     <option value="R82">R82</option>
                   </select>
                 </div>
                 <div>
+                  <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Device Model</label>
+                  <input name="model" defaultValue={editModal.cluster.model || "Quantum 9200"} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm" placeholder="e.g. Quantum 9200" />
+                </div>
+                <div>
                   <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">JHF Level</label>
-                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500" placeholder="e.g. Take 141" />
+                  <input name="hotfix" defaultValue={editModal.cluster.hotfix} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm" placeholder="e.g. Take 141" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Implementation Status</label>
-                <textarea name="status" defaultValue={editModal.cluster.status} required rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none" placeholder="e.g. Upgraded successfully" />
+                <textarea name="status" defaultValue={editModal.cluster.status} required rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none text-sm" placeholder="e.g. Upgraded successfully" />
               </div>
 
               <div>
-                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Special Note (Client / GW Specific)</label>
-                <textarea name="note" defaultValue={editModal.cluster.note} rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none" placeholder="e.g. Requires maintenance window approval from client ISO." />
+                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Special Note</label>
+                <textarea name="note" defaultValue={editModal.cluster.note} rows={2} className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 resize-none text-sm" placeholder="e.g. Requires maintenance window approval from client ISO." />
               </div>
 
               <div className="pt-4 flex justify-between items-center border-t border-zinc-800 mt-6">
                 {editModal.cluster.id ? (
                   <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest px-4 py-2 border border-red-500/30 hover:bg-red-950/30 transition-colors font-bold">
-                    Delete GW
+                    Delete Cluster
                   </button>
                 ) : <div></div>}
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setEditModal(null)} className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
                   <button type="submit" className="text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-                    Save Gateway
+                    Save Cluster
                   </button>
                 </div>
               </div>

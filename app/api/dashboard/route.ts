@@ -4,18 +4,18 @@ import kv from '@/lib/redis';
 export const dynamic = 'force-dynamic';
 
 const INITIAL_CUSTOMERS = [
-  { id: "c1", name: "Sampath Bank", clusters: [{ id: "cl1", name: "GW-DC-01", version: "R81.20", hotfix: "Take 100", status: "Pending Analysis", note: "Scheduled for weekend maintenance window." }] },
-  { id: "c2", name: "HNB", clusters: [{ id: "cl2", name: "GW-PRD-FW01", version: "R81.20", hotfix: "Take 141", status: "IKE Portfix Installed", note: "Critical banking perimeter node." }] },
+  { id: "c1", name: "Sampath Bank", clusters: [{ id: "cl1", name: "Production", version: "R81.20", hotfix: "Take 100", model: "Quantum 9200", status: "Pending Analysis", note: "Scheduled for weekend maintenance window." }] },
+  { id: "c2", name: "HNB", clusters: [{ id: "cl2", name: "Production Gateway", version: "R81.20", hotfix: "Take 141", model: "Quantum 6200", status: "IKE Portfix Installed", note: "Critical banking perimeter node." }] },
   { id: "c3", name: "BOC", clusters: [
-    { id: "cl3", name: "GW-PRIMARY-DC", version: "R81.20", hotfix: "Take 105", status: "Pending Upgrade", note: "Primary DC gateway awaiting scheduling." },
-    { id: "cl4", name: "GW-DR-GATEWAY", version: "R81.20", hotfix: "Take 141", status: "Upgraded", note: "DR site fully operational on Take 141." }
+    { id: "cl3", name: "Primary DC", version: "R81.20", hotfix: "Take 105", model: "Quantum 9200", status: "Pending Upgrade", note: "Primary DC gateway awaiting scheduling." },
+    { id: "cl4", name: "DR Gateway", version: "R81.20", hotfix: "Take 141", model: "Quantum 5600", status: "Upgraded", note: "DR site fully operational on Take 141." }
   ]},
-  { id: "c4", name: "Peoples Bank", clusters: [{ id: "cl5", name: "GW-PROD-PRIMARY", version: "R81.20", hotfix: "Take 141", status: "Only Primary IKE Installed", note: "Secondary standby node pending sync." }] },
+  { id: "c4", name: "Peoples Bank", clusters: [{ id: "cl5", name: "Prod Primary", version: "R81.20", hotfix: "Take 141", model: "Quantum 6200", status: "Only Primary IKE Installed", note: "Secondary standby node pending sync." }] },
   { id: "c5", name: "CDB", clusters: [
-    { id: "cl6", name: "GW-DR-CLUSTER", version: "R81.20", hotfix: "Take 141", status: "Upgraded", note: "DR nodes verified." },
-    { id: "cl7", name: "GW-PROD-FW", version: "R81.20", hotfix: "Take 105", status: "Pending", note: "Pending change request approval." }
+    { id: "cl6", name: "DR Cluster", version: "R81.20", hotfix: "Take 141", model: "Quantum 5600", status: "Upgraded", note: "DR nodes verified." },
+    { id: "cl7", name: "Prod Primary", version: "R81.20", hotfix: "Take 105", model: "Quantum 9200", status: "Pending", note: "Pending change request approval." }
   ]},
-  { id: "c6", name: "SAGT", clusters: [{ id: "cl8", name: "GW-CORE-01", version: "R82", hotfix: "Take 103", status: "R82 Gateway Up to date", note: "Running latest R82 build." }] }
+  { id: "c6", name: "SAGT", clusters: [{ id: "cl8", name: "Core Firewall", version: "R82", hotfix: "Take 103", model: "Quantum Force 19000", status: "R82 Gateway Up to date", note: "Running latest R82 build." }] }
 ];
 
 async function scrapeCheckPoint() {
