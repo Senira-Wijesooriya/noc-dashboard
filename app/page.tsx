@@ -200,7 +200,7 @@ export default function SOCDashboard() {
       return c;
     });
 
-    const actionText = isNew ? `Deployed cluster "${clusterName}"` : `Updated cluster "${clusterName}"`;
+    const actionText = isNew ? `Deployed cluster/asset "${clusterName}"` : `Updated cluster/asset "${clusterName}"`;
     saveCustomersToDB(updatedCustomers, actionText);
     setEditModal(null);
   };
@@ -217,7 +217,7 @@ export default function SOCDashboard() {
       return c;
     });
 
-    saveCustomersToDB(updatedCustomers, `Deleted cluster "${clusterName}"`);
+    saveCustomersToDB(updatedCustomers, `Deleted cluster/asset "${clusterName}"`);
     setEditModal(null);
   };
 
@@ -302,7 +302,7 @@ export default function SOCDashboard() {
       
       {/* LIVE INTELLIGENCE TICKER (Slower 40s Speed) */}
       <div className="bg-orange-950/90 border-b border-orange-500/60 text-orange-300 py-2 overflow-hidden whitespace-nowrap relative flex items-center shadow-sm">
-        <div className="animate-[marquee_40s_linear_infinite] inline-block font-bold tracking-widest text-xs w-full">
+        <div className="animate-[marquee_40s_linear_infinite] inline-block font-bold tracking-widest text-sm w-full">
           🔥 MITESP SHIPYARD INTEL: TARGET JUMBO HOTFIX DEPLOYMENT REQUIRED 
           <span className="text-white mx-4">|</span> R81.20: TARGET TAKE {data?.targets?.["R81.20"] || '170'} 
           <span className="text-white mx-4">|</span> R82: TARGET TAKE {data?.targets?.["R82"] || '127'} 
@@ -369,7 +369,7 @@ export default function SOCDashboard() {
                     <Server className="text-orange-500 w-6 h-6" />
                     <span className="text-xl font-black text-white uppercase tracking-wider">{customer.name || 'Unknown Client'}</span>
                     <span className="bg-zinc-800 text-orange-300 text-xs px-2 py-1 rounded-sm border border-zinc-700 font-bold">
-                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Clusters
+                      {Array.isArray(customer?.clusters) ? customer.clusters.length : 0} Assets
                     </span>
                   </div>
                   
@@ -378,7 +378,7 @@ export default function SOCDashboard() {
                       onClick={() => setEditModal({ customerId: customer.id, cluster: { name: '', version: 'R81.20', hotfix: 'Take ', model: 'Quantum 9200', clusterType: 'Cluster', status: '', note: '' } })}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-zinc-800 hover:bg-orange-950 text-orange-400 px-3 py-1 border border-orange-500/40 flex items-center gap-1 font-bold rounded-sm"
                     >
-                      <Plus className="w-3 h-3" /> Add Cluster
+                      <Plus className="w-3 h-3" /> Add Asset
                     </button>
                     <button 
                       onClick={(e) => handleDeleteClient(customer.id, customer.name, e)}
@@ -404,7 +404,7 @@ export default function SOCDashboard() {
                               <div className="flex justify-between items-start">
                                 <h3 className="font-black text-white tracking-widest uppercase flex items-center gap-2">
                                   <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                                  {cluster.name || 'Unnamed Cluster'}
+                                  {cluster.name || 'Unnamed Asset'}
                                   <span className="text-[10px] bg-orange-950/80 text-orange-300 px-2 py-0.5 rounded border border-orange-500/30 normal-case font-bold">
                                     {cluster.clusterType || 'Cluster'}
                                   </span>
@@ -413,7 +413,7 @@ export default function SOCDashboard() {
                                   onClick={() => setEditModal({ customerId: customer.id, cluster })}
                                   className="text-xs bg-zinc-800 hover:bg-orange-950 text-orange-300 px-3 py-1 transition-colors opacity-0 group-hover:opacity-100 border border-orange-500/30 rounded-sm font-bold"
                                 >
-                                  EDIT CLUSTER
+                                  EDIT
                                 </button>
                               </div>
 
@@ -455,7 +455,7 @@ export default function SOCDashboard() {
                         })
                       ) : (
                         <div className="text-zinc-500 italic text-sm py-4 w-full col-span-full text-center">
-                          No clusters configured for this client perimeter. Click "+ Add Cluster" to deploy.
+                          No assets configured for this client perimeter. Click "+ Add Asset" to deploy.
                         </div>
                       )}
                     </div>
@@ -471,7 +471,7 @@ export default function SOCDashboard() {
         </div>
       </main>
 
-      {/* AUDIT LOG MODAL (Tracks Real Client IP) */}
+      {/* AUDIT LOG MODAL */}
       {showLogModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4">
           <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh] rounded-sm">
@@ -517,15 +517,15 @@ export default function SOCDashboard() {
           <div className="bg-zinc-900 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.2)] w-full max-w-lg overflow-hidden rounded-sm">
             <div className="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700">
               <h3 className="font-black text-white tracking-widest uppercase text-orange-400 text-xs">
-                {editModal.cluster.id ? 'Edit Cluster' : 'Deploy New Cluster'}
+                {editModal.cluster.id ? 'Edit Asset / Cluster' : 'Deploy New Asset / Cluster'}
               </h3>
               <button onClick={() => setEditModal(null)} className="text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
             <form onSubmit={handleSaveCluster} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Cluster Name</label>
-                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors rounded-sm text-sm" placeholder="e.g. Production Cluster" />
+                <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Asset / Cluster Name</label>
+                <input name="name" defaultValue={editModal.cluster.name} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-4 py-2 focus:outline-none focus:border-orange-500 transition-colors rounded-sm text-sm" placeholder="e.g. Production Cluster / Primary MGMT" />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -534,6 +534,7 @@ export default function SOCDashboard() {
                   <select name="clusterType" defaultValue={editModal.cluster.clusterType || "Cluster"} className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm">
                     <option value="Cluster">Cluster (HA)</option>
                     <option value="Single GW">1 GW (Single)</option>
+                    <option value="MGMT">MGMT (Management)</option>
                   </select>
                 </div>
                 <div>
@@ -548,7 +549,7 @@ export default function SOCDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">Device Model</label>
-                  <input name="model" defaultValue={editModal.cluster.model || "Quantum 9200"} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm" placeholder="e.g. Quantum 9200" />
+                  <input name="model" defaultValue={editModal.cluster.model || "Quantum 9200"} required className="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2 focus:outline-none focus:border-orange-500 text-sm rounded-sm" placeholder="e.g. Quantum 9200 / Smart-1" />
                 </div>
                 <div>
                   <label className="block text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">JHF Level</label>
@@ -569,13 +570,13 @@ export default function SOCDashboard() {
               <div className="pt-4 flex justify-between items-center border-t border-zinc-800 mt-6">
                 {editModal.cluster.id ? (
                   <button type="button" onClick={handleDeleteCluster} className="text-xs text-red-400 hover:text-red-300 uppercase tracking-widest px-4 py-2 border border-red-500/30 hover:bg-red-950/30 transition-colors font-bold rounded-sm">
-                    Delete Cluster
+                    Delete Asset
                   </button>
                 ) : <div></div>}
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setEditModal(null)} className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest px-4 py-2 transition-colors">Cancel</button>
                   <button type="submit" className="text-xs bg-orange-600 hover:bg-orange-500 text-white font-bold uppercase tracking-widest px-6 py-2 transition-colors shadow-[0_0_15px_rgba(249,115,22,0.4)] rounded-sm">
-                    Save Cluster
+                    Save Asset
                   </button>
                 </div>
               </div>
