@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MITESP Check Point Shipyard — Security Upgrade
 
-## Getting Started
+A client asset and Check Point Jumbo Hotfix monitoring dashboard built with **Next.js 16**, **Vercel**, and the **existing Vercel KV / Upstash Redis** database. It has:
 
-First, run the development server:
+- Passwordless, six-digit corporate email code sign-in (`@mitesp.com` only). Uses a Resend-approved sending domain, hashed expiring OTPs, rate limits, server-side sessions and httpOnly cookies.
+- Server-side access checks on dashboard, edit, log, backup, sync and restore APIs.
+- Four Check Point versions (R81.20, R82, R82.10, R82.20) with latest *published* JHF Takes from the official per-version Downloads page, source error indicators and hourly refresh.
+- Client/asset edits, immutable audit entries, a 200-entry recycle history, optimistic concurrency protection and conflict-checked undo.
+- Per-client/all-clients print-to-PDF and CSV reports, plus an authenticated full data JSON backup.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Read [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) before replacing the live deployment.** The guide covers backing up Redis data, setting email sender credentials, updating the existing GitHub repository and verifying Vercel.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install Node.js 22 and clone the existing project.
+2. Copy `.env.example` to `.env.local` and enter your **existing** KV values and newly provisioned email-sender credentials.
+3. Run `npm ci`, then `npm test`, `npm run build`, `npm run dev`.
+4. Open `http://localhost:3000` and request an OTP for a permitted work email.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+No real secrets, client records or demo accounts are included in this ZIP. Do not store secrets in Git, browser-side code or screenshots.
 
-## Learn More
+> **Important:** A *latest published* Jumbo Hotfix Take is not automatically a vendor-recommended or safe production upgrade for a particular gateway. Check the vendor's Critical Information, support requirements, special hotfixes and customer change approvals.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> **Status:** Source-level checks and 10 unit/integration tests were performed during preparation. The Next.js production build and end-to-end verification email delivery must be executed in an environment with npm access, the project Redis credentials and an authorized email provider.
