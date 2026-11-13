@@ -14,7 +14,7 @@ export function companyEmail(input: unknown): string | null {
 }
 export function emailAllowed(email: string): boolean {
   const raw = process.env.SHIPYARD_ALLOWED_EMAILS?.trim();
-  if (!raw) return true; // Default: verified @mitesp.com domain; restrict in production.
+  if (!raw) return false; // Fail closed: no one can sign in without an explicit allowlist.
   return raw.split(",").some((value) => value.trim().toLowerCase() === email);
 }
 export const hash = (input: string) => createHash("sha256").update(input).digest("hex");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomInt } from "node:crypto";
 import kv from "@/lib/redis";
+import { gmailConfigured, sendOtpEmail } from "@/lib/mailer";
 import { companyEmail, emailAllowed, getSession, hash, isSameOrigin, otpHash, requesterIp, SESSION_COOKIE, SESSION_SECONDS, OTP_SECONDS, token } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     const ipKey = hash(requesterIp(req));
 
     if (body.action === "request_code") {
-      if (!process.env.RESEND_API_KEY || !process.env.OTP_FROM_EMAIL || !process.env.OTP_HASH_SECRET) {
+      if (!gmailConfigured() || !process.env.OTP_HASH_SECRET || process.env.OTP_HASH_SECRET.length < 32) {
         return reply({ error: "Email verification has not been configured by the administrator." }, 503);
       }
       // Request limits reduce email flooding. A code can only be sent every 60 seconds.
@@ -44,16 +45,7 @@ export async function POST(req: Request) {
       const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
       await kv.set(`auth:otp:${emailKey}`, JSON.stringify({ digest: otpHash(email, code), attempts: 0 }), { ex: OTP_SECONDS });
       try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST", signal: AbortSignal.timeout(10000),
-          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: process.env.OTP_FROM_EMAIL, to: [email],
-            subject: "MITESP Shipyard - your sign-in code",
-            text: `Your MITESP Check Point Shipyard sign-in code is ${code}. It expires in 10 minutes. If you did not request this, ignore this email.`,
-          }),
-        });
-        if (!response.ok) throw new Error(`Email API returned ${response.status}`);
+        await sendOtpEmail(email, code);
         return reply({ success: true, message: "If delivery is permitted, a 6-digit code has been sent to your work email." });
       } catch (error) {
         console.error("OTP email delivery failed:", error);

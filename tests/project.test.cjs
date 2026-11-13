@@ -1,4 +1,4 @@
-/** Unit tests: run with `npm test` after npm ci. No Redis, Resend or network required. */
+/** Unit tests: run with `npm test` after npm ci. No Redis, Gmail or network required. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -88,6 +88,10 @@ test('email verification only accepts exact company domain; OTP hashing is deter
   assert.equal(security.companyEmail('PERSON@MITESP.COM '), 'person@mitesp.com');
   assert.equal(security.companyEmail('person@mitesp.com.evil.test'), null);
   assert.equal(security.companyEmail('person@gmail.com'), null);
+  delete process.env.SHIPYARD_ALLOWED_EMAILS;
+  assert.equal(security.emailAllowed('person@mitesp.com'), false);
+  process.env.SHIPYARD_ALLOWED_EMAILS = 'person@mitesp.com';
+  assert.equal(security.emailAllowed('person@mitesp.com'), true);
   assert.equal(security.otpHash('person@mitesp.com', '123456').length, 64);
   assert.notEqual(security.otpHash('person@mitesp.com', '123456'), security.otpHash('person@mitesp.com', '123457'));
 });
@@ -149,10 +153,10 @@ test('dashboard API enforces sessions, attributes audit to verified user, blocks
 test('OTP email flow sends a code, rejects a wrong code and creates server session on correct code', async () => {
   const mem = new Map();
   let outgoingMessage = '';
-  process.env.RESEND_API_KEY = 'test-token';
-  process.env.OTP_FROM_EMAIL = 'Dashboard <mail@verified.example>';
+  process.env.GMAIL_SENDER_EMAIL = 'shipyard.secure.login@gmail.com';
+  process.env.GMAIL_APP_PASSWORD = 'abcdefghijklmnop';
   process.env.OTP_HASH_SECRET = '0123456789abcdefghij0123456789abcdefghij';
-  delete process.env.SHIPYARD_ALLOWED_EMAILS;
+  process.env.SHIPYARD_ALLOWED_EMAILS = 'verified@mitesp.com';
   const kv = {
     get: async (key) => mem.get(key) || null,
     set: async (key, value, options={}) => {
@@ -173,7 +177,8 @@ test('OTP email flow sends a code, rejects a wrong code and creates server sessi
   const route = load('app/api/auth/route.ts', {
     'next/server': { NextResponse: { json: (body, options={}) => ({ body, status: options.status || 200, cookies: { set: (name,value) => { mem.set('cookie:'+name,value); } } }) } },
     '@/lib/redis': { __esModule: true, default: kv }, '@/lib/security': sec,
-  }, { fetch: async (_url, args) => { outgoingMessage=JSON.parse(args.body).text;return { ok:true }; } });
+    '@/lib/mailer': { gmailConfigured: () => true, sendOtpEmail: async (_to, code) => { outgoingMessage = `Your code is ${code}`; } },
+  });
   const request = (body) => new Request('https://shipyard.example/api/auth', {
     method:'POST', headers:{origin:'https://shipyard.example', 'content-type':'application/json'}, body:JSON.stringify(body)
   });
@@ -187,4 +192,26 @@ test('OTP email flow sends a code, rejects a wrong code and creates server sessi
   assert.equal(verified.body.user.email,'verified@mitesp.com');
   assert.ok(mem.get('cookie:shipyard_session'));
   assert.equal((await route.POST(request({action:'verify_code',email:'verified@mitesp.com',code}))).status,401);
+});
+
+
+test('Gmail mailer requires its designated sender and a 16-character App Password', async () => {
+  let envelope;
+  const mailer = load('lib/mailer.ts', {
+    nodemailer: { createTransport: (config) => {
+      assert.equal(config.host, 'smtp.gmail.com');
+      assert.equal(config.port, 465);
+      assert.equal(config.secure, true);
+      return { sendMail: async (message) => { envelope = message; return { accepted: [message.to], rejected: [] }; } };
+    } },
+  });
+  process.env.GMAIL_SENDER_EMAIL = 'shipyard.secure.login@gmail.com';
+  process.env.GMAIL_APP_PASSWORD = 'abcdefghijklmnop';
+  assert.equal(mailer.gmailConfigured(), true);
+  await mailer.sendOtpEmail('person@mitesp.com', '123456');
+  assert.equal(envelope.to, 'person@mitesp.com');
+  assert.match(envelope.text, /123456/);
+  await assert.rejects(() => mailer.sendOtpEmail('person@gmail.com', '123456'), /Invalid verification recipient/);
+  process.env.GMAIL_APP_PASSWORD = 'invalid';
+  assert.equal(mailer.gmailConfigured(), false);
 });
